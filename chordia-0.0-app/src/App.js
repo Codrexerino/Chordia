@@ -1,25 +1,25 @@
-import logo from './logo.svg';
-import './App.css';
+// App.js or your specific component file
+import React from 'react';
+import { Tree } from 'react-d3-tree';
 
-function App() {
+function MyTreeComponent() {
+  // Create your tree data structure
+  const treeData = {
+    name: 'Parent',
+    children: [
+      { name: 'Child One' },
+      {
+        name: 'Child Two',
+        children: [{ name: 'Grandchild' }]
+      }
+    ]
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div id="treeWrapper" style={{width: '50em', height: '20em'}}>
+      <Tree data={treeData} />
     </div>
   );
 }
 
-export default App;
+export default MyTreeComponent;
