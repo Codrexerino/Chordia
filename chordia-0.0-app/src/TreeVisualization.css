@@ -1,0 +1,17 @@
+.link {
+    fill: none;
+    stroke: #89c9b8; /* Forest green for links */
+    stroke-width: 2px;
+  }
+  
+  .nodeCircle {
+    fill: #556b2f; /* Dark Olive Green */
+    stroke: #8FBC8F; /* Dark Sea Green */
+    stroke-width: 3px;
+  }
+  
+  text {
+    font: 12px sans-serif;
+    fill: #305d36; /* Dark green text */
+  }
+  
