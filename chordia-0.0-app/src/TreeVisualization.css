@@ -4,9 +4,9 @@
     stroke-width: 2px;
   }
   
-  .nodeCircle {
-    fill: #556b2f; /* Dark Olive Green */
-    stroke: #8FBC8F; /* Dark Sea Green */
+  .nodeRect {
+    fill: #d4ff8b; /* Dark Olive Green */
+    stroke: #bbffbb; /* Dark Sea Green */
     stroke-width: 3px;
   }
   
