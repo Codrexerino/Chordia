@@ -13,8 +13,8 @@ function TreeVisualization() {
     d3.select(svgRef.current).selectAll("*").remove();
 
     const svg = d3.select(svgRef.current)
-    .attr('width', width)
-    .attr('height', height)
+    .attr("width", "100%") 
+    .attr("height", "100%")
     .append('g');
 
     const hierarchyData = {
@@ -48,22 +48,39 @@ function TreeVisualization() {
 
     // Create the hierarchical data structure and tree layout
     const root = d3.hierarchy(hierarchyData);
-    const treeLayout = d3.tree().size([height - 200, (width / 2) - 100]); // Provide some padding
-    // Assign the calculated positions to the nodes
-    treeLayout(root);
+    const treeLayout = d3.tree().size([width, height]).separation((a, b) => (a.parent === b.parent ? 1 : 2) / a.depth);
+  
+    // After setting up the tree layout
+treeLayout(root);
 
+// Calculate bounds and determine scale
+let minX = Infinity;
+let maxX = -Infinity;
+let minY = Infinity;
+let maxY = -Infinity;
+root.each(d => {
+  if (d.x < minX) minX = d.x;
+  if (d.x > maxX) maxX = d.x;
+  if (d.y < minY) minY = d.y;
+  if (d.y > maxY) maxY = d.y;
+});
 
-    let minX = Infinity;
-    let maxX = -Infinity;
-    root.each(d => {
-      minX = Math.min(minX, d.x);
-      maxX = Math.max(maxX, d.x);
-    });
+// Padding to not clip the tree edges
+const margin = 20;
+// Compute the scale factor based on the size of the tree and the SVG container
+const scaleX = (width - margin * 2) / (maxX - minX);
+const scaleY = (height - margin * 2) / (maxY - minY);
+const scale = Math.min(scaleX, scaleY, 1);
 
-    const scale = 0.5;
-    const translateX = width / 2;
-    const translateY = height - 100; // Space from the bottom of the SVG
-    svg.attr('transform', `translate(${translateX}, ${translateY})`);
+// Compute the translation
+const centerX = (minX + maxX) / 2;
+const centerY = maxY;
+const translateX = width / 2 - centerX * scale;
+const translateY = height - margin - centerY * scale; // Push the tree up from the bottom by the scale-adjusted amount
+
+// Apply the scaling and translation to center the tree
+svg.attr('transform', `translate(${translateX},${translateY}) scale(${scale})`);
+
 
 
 
@@ -108,7 +125,7 @@ function TreeVisualization() {
 
   }, []);
 
-  return <svg ref={svgRef} style={{ position: "absolute", top: 0, left: 0 }}></svg>;
+  return <svg ref={svgRef} style={{ margin: "0 auto", top: 0, left: 0 }}></svg>;
 }
 
 export default TreeVisualization;
