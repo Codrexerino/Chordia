@@ -6,126 +6,102 @@ function TreeVisualization() {
   const svgRef = useRef();
 
   useEffect(() => {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    // Størrelsen på nettverksdiagrammet
+    const width = 960;
+    const height = 600;
 
-    // Clear any existing SVG content
+    // Fjern eksisterende graf (hvis den finnes)
     d3.select(svgRef.current).selectAll("*").remove();
 
+    // Opprett SVG-elementet
     const svg = d3.select(svgRef.current)
-    .attr("width", "100%") 
-    .attr("height", "100%")
-    .append('g');
+      .attr("width", width)
+      .attr("height", height)
+      .append("g") // Gruppe for å holde alle elementer
+      .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
-    const hierarchyData = {
-        name: "Harmony",
-        children: [
-          {
-            name: "Scales",
-            children: [
-              { name: "Major scale" }
-            ]
-          },
-          {
-            name: "Intervals",
-            children: [
-              { name: "Perfect Intervals" },
-              { name: "Major and Minor Intervals" }
-            ]
-          },
-          {
-            name: "Chords",
-            children: [
-              { name: "Major Chords" },
-              { name: "Minor Chords" }
-            ]
-          }
-        ]
-      };
+    // Data for nodene og linkene
+    const graph = {
+      "nodes": [
+        {"id": "Harmony", "group": 1},
+        {"id": "Scales", "group": 2},
+        {"id": "Intervals", "group": 2},
+        {"id": "Chords", "group": 2},
+        {"id": "Major scale", "group": 3},
+        {"id": "Perfect Intervals", "group": 3},
+        {"id": "Major and Minor Intervals", "group": 3},
+        {"id": "Major Chords", "group": 3},
+        {"id": "Minor Chords", "group": 3}
+      ],
+      "links": [
+        {"source": "Major scale", "target": "Scales"},
+        {"source": "Perfect Intervals", "target": "Intervals"},
+        {"source": "Major and Minor Intervals", "target": "Intervals"},
+        {"source": "Major Chords", "target": "Chords"},
+        {"source": "Minor Chords", "target": "Chords"},
+        {"source": "Scales", "target": "Harmony"},
+        {"source": "Intervals", "target": "Harmony"},
+        {"source": "Chords", "target": "Harmony"}
+      ]
+    };
 
+    // Opprett en forceSimulation for å håndtere layout av nodene og linkene
+    const simulation = d3.forceSimulation(graph.nodes)
+      .force("link", d3.forceLink(graph.links).id(d => d.id))
+      .force("charge", d3.forceManyBody().strength(-400))
+      .force("center", d3.forceCenter());
 
+    // Tegn linkene mellom nodene
+    const link = svg.append("g")
+      .attr("class", "links")
+      .selectAll("line")
+      .data(graph.links)
+      .enter().append("line")
+      .attr("stroke-width", 2)
+      .style("stroke", "#999");
 
+    // Opprett grupper for nodene som vil holde både sirkler og tekst
+    const node = svg.append("g")
+    .attr("class", "nodes")
+    .selectAll("g.node")
+    .data(graph.nodes)
+    .enter().append("g")
+    .attr("class", "node");
 
-    // Create the hierarchical data structure and tree layout
-    const root = d3.hierarchy(hierarchyData);
-    const treeLayout = d3.tree().size([width, height]).separation((a, b) => (a.parent === b.parent ? 1 : 2) / a.depth);
-  
-    // After setting up the tree layout
-treeLayout(root);
+    // Tegn sirkler for hver node inne i gruppen
+    node.append("circle")
+    .attr("r", 15)
+    .attr("fill", "green");
 
-// Calculate bounds and determine scale
-let minX = Infinity;
-let maxX = -Infinity;
-let minY = Infinity;
-let maxY = -Infinity;
-root.each(d => {
-  if (d.x < minX) minX = d.x;
-  if (d.x > maxX) maxX = d.x;
-  if (d.y < minY) minY = d.y;
-  if (d.y > maxY) maxY = d.y;
-});
+    // Tegn tekst for hver node inne i gruppen
+    node.append("text")
+      .text(d => d.id)
+      .attr("x", 0) // Sentrer tekst horisontalt
+      .attr("y", 0) // Start ved midten av sirkelen vertikalt
+      .attr("dy", ".35em") // Justering for å vertikalt sentrere basert på fontens høyde
+      .style("font-size", "5px")
+      .style("fill", "#fff")
+      .style("text-anchor", "middle"); // Sentrerer teksten basert på dens bredde
 
-// Padding to not clip the tree edges
-const margin = 20;
-// Compute the scale factor based on the size of the tree and the SVG container
-const scaleX = (width - margin * 2) / (maxX - minX);
-const scaleY = (height - margin * 2) / (maxY - minY);
-const scale = Math.min(scaleX, scaleY, 1);
+      
 
-// Compute the translation
-const centerX = (minX + maxX) / 2;
-const centerY = maxY;
-const translateX = width / 2 - centerX * scale;
-const translateY = height - margin - centerY * scale; // Push the tree up from the bottom by the scale-adjusted amount
-
-// Apply the scaling and translation to center the tree
-svg.attr('transform', `translate(${translateX},${translateY}) scale(${scale})`);
-
-
-
-
-    // Draw the links (paths)
-    svg.selectAll('.link')
-      .data(root.links())
-      .enter().append('path')
-      .attr("class", "link")
-      .attr("d", d3.linkVertical()
-        .x(d => d.x)
-        .y(d => -d.y)); // Use vertical links and invert y position
-
-
-
-    // Draw the nodes (groups)
-    const node = svg.selectAll('.node')
-    .data(root.descendants())
-    .enter().append('g')
-    .attr('class', 'node')
-    .attr('transform', d => `translate(${d.x},${-d.y})`);
-
-    // Draw rounded rectangles for each node
-    node.append('rect')
-    .attr('width', 120) // Width of the rectangle
-    .attr('height', 40) // Height of the rectangle
-    .attr('x', -60) // Position the rectangle center on the node center
-    .attr('y', -20) // Position the rectangle center on the node center
-    .attr('rx', 15) // Set the x-axis radius for rounded corners
-    .attr('ry', 15) // Set the y-axis radius for rounded corners (optional)
-    .attr('class', 'nodeRect');
-
-    // Add labels to each node
-    node.append('text')
-    .attr('dy', 4) // Adjust to vertically center the text in the rectangle
-    .attr('text-anchor', 'middle') // Center the text horizontally
-    .text(d => d.data.name)
-    .attr('class', 'nodeLabel');
-
-
-
-
+    simulation.on("tick", () => {
+      // Oppdater posisjoner for linkene
+      link
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+    
+      // Oppdater posisjonen til nodene (gruppene som inneholder både sirkler og tekst)
+      node
+        .attr("transform", d => `translate(${d.x},${d.y})`);
+    });
+    
 
   }, []);
 
-  return <svg ref={svgRef} style={{ margin: "0 auto", top: 0, left: 0 }}></svg>;
+  return <svg ref={svgRef} className="tree-container"></svg>;
 }
 
 export default TreeVisualization;
