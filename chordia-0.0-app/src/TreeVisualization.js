@@ -8,12 +8,14 @@ function TreeVisualization() {
 
   useEffect(() => {
 
-    // Define margins
+    // definer margins
     const margin = { top: 20, right: 120, bottom: 20, left: 120 };
 
-    // definer bredde og høyde med marginer
-    const width = 960 - margin.right - margin.left;
-    const height = 600 - margin.top - margin.bottom;
+    // Calculer width og høyde basert på SVG containern sine dimensjoner
+    const { clientWidth, clientHeight } = svgRef.current.getBoundingClientRect();
+    const width = clientWidth - margin.left - margin.right;
+    const height = clientHeight - margin.top - margin.bottom;
+
 
 
     // Fjern eksisterende graf (hvis den finnes)
@@ -22,9 +24,17 @@ function TreeVisualization() {
 
     // Create SVG element
     const svg = d3.select(svgRef.current)
-    .attr("width", width + margin.right + margin.left)
-    .attr("height", height + margin.top + margin.bottom)
-    .append("g")
+    .attr("width", "100%") // setter bredden av SVG container til 100% av containeren
+    .attr("height", "100%") // gjør det samme for høyden
+    // legger til viewBox for responsivitet funksjonalitet
+    .attr("viewBox", `0 0 ${width} ${height}`) // justerer viewBox for å plass til treeLayot
+    .call(d3.zoom().on("zoom", (event) => {
+      g.attr("transform", event.transform);
+    })) 
+    .append(`g`);
+
+
+    const g = svg.append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 
@@ -96,8 +106,33 @@ function TreeVisualization() {
       .x(d => d.x)
       .y(d => d.y))
     .attr("fill", "none")
-    .attr("stroke", "#ff0000") // Example: Red color for distinction
-    .attr("stroke-dasharray", "2,2"); // Example: Dashed line for visual differentiation
+    .attr("stroke", "grey") // Example: Red color for distinction
+    .attr("stroke-dasharray", "2,2")
+    .attr("stroke-width", "2px"); // Example: Dashed line for visual differentiation
+
+    // After the tree layout is computed
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    hierarchyRoot.each(node => {
+      if (node.x < minX) minX = node.x;
+      if (node.x > maxX) maxX = node.x;
+      if (node.y < minY) minY = node.y;
+      if (node.y > maxY) maxY = node.y;
+    });
+
+    // Define the zoom behavior
+    const zoom = d3.zoom()
+    .scaleExtent([0.1, 3]) // Example scale extent, can be adjusted
+    .on("zoom", (event) => {
+      g.attr("transform", event.transform);
+    });
+
+    // Now apply the initial zoom based on the extents
+    const initialScale = Math.min(width / (maxX - minX), height / (maxY - minY));
+    const initialX = -minX * initialScale + (width - (maxX - minX) * initialScale) / 2;
+    const initialY = -minY * initialScale + (height - (maxY - minY) * initialScale) / 2;
+
+    svg.call(zoom.transform, d3.zoomIdentity.translate(initialX, initialY).scale(initialScale));
 
 
 
