@@ -1,9 +1,3 @@
-.tree-container {
-  width: 100%; /* Use 100% of the container width */
-  height: 100vh; /* Use 100% of the viewport height, or choose a height that fits your design*/
-  /* Other styles...*/
-}
-
 .link {
     fill: none;
     stroke: #89c9b8; /* Forest green for links */

@@ -1,41 +1,51 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
 import './TreeVisualization.css';
 import { TreeData_H, TreeData_C } from './TreeData.js';
 
 function TreeVisualization() {
-  const svgRef = useRef();
+  const svgRef = useRef(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
+  // This useEffect replaces your existing dimension setting logic
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        const { width, height } = entry.contentRect;
+        setDimensions({ width, height });
+        console.log('New width:', width, 'New height:', height); // Debug output
+      }
+    });
+    if(svgRef.current) {
+      resizeObserver.observe(svgRef.current);
+    }
+    
+    // Cleanup observer on component unmount
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+
 
   useEffect(() => {
-
-    // definer margins
+    if (dimensions.width && dimensions.height) {
+    // Define the margins inside the useEffect hook
     const margin = { top: 20, right: 120, bottom: 20, left: 120 };
-
-    // Calculer width og høyde basert på SVG containern sine dimensjoner
-    const { clientWidth, clientHeight } = svgRef.current.getBoundingClientRect();
-    const width = clientWidth - margin.left - margin.right;
-    const height = clientHeight - margin.top - margin.bottom;
-
-
-
-    // Fjern eksisterende graf (hvis den finnes)
-    d3.select(svgRef.current).selectAll("*").remove();
+    const width = dimensions.width - margin.left - margin.right;
+    const height = dimensions.height - margin.top - margin.bottom;
+    
+    console.log('width', width);
+    console.log('height', height);
 
 
-    // Create SVG element
+    
+    // Now append the svg element to the ref and set up the viewBox
     const svg = d3.select(svgRef.current)
-    .attr("width", "100%") // setter bredden av SVG container til 100% av containeren
-    .attr("height", "100%") // gjør det samme for høyden
-    // legger til viewBox for responsivitet funksjonalitet
-    .attr("viewBox", `0 0 ${width} ${height}`) // justerer viewBox for å plass til treeLayot
-    .call(d3.zoom().on("zoom", (event) => {
-      g.attr("transform", event.transform);
-    })) 
-    .append(`g`);
+    .attr('viewBox', `0, 0, ${dimensions.width},${dimensions.height}`)
+    .append('g')
+    .attr('transform', `translate(${margin.left},${margin.top})`);
 
-
-    const g = svg.append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 
     // Definer grafen/hieraki
@@ -49,6 +59,9 @@ function TreeVisualization() {
     hierarchyRoot.descendants().forEach(node => {
       node.y = height - node.y - margin.bottom; // This will flip the tree
 
+      // Update the x and y attributes of the nodes and links
+      node.x += margin.left;
+      node.y += margin.top;
     });
 
     // Definerer linker basert på hierakial verdier
@@ -62,7 +75,7 @@ function TreeVisualization() {
       .data(hierarchyRoot.links())
       .enter().append("path")
       .attr("class", "link")
-      .attr("d", linksGenerator);
+      .attr("d", linksGenerator); // Update the d attribute here
 
 
     // tegner noder
@@ -119,26 +132,10 @@ function TreeVisualization() {
       if (node.y < minY) minY = node.y;
       if (node.y > maxY) maxY = node.y;
     });
+    }
+  }, [dimensions]);
 
-    // Define the zoom behavior
-    const zoom = d3.zoom()
-    .scaleExtent([0.1, 3]) // Example scale extent, can be adjusted
-    .on("zoom", (event) => {
-      g.attr("transform", event.transform);
-    });
-
-    // Now apply the initial zoom based on the extents
-    const initialScale = Math.min(width / (maxX - minX), height / (maxY - minY));
-    const initialX = -minX * initialScale + (width - (maxX - minX) * initialScale) / 2;
-    const initialY = -minY * initialScale + (height - (maxY - minY) * initialScale) / 2;
-
-    svg.call(zoom.transform, d3.zoomIdentity.translate(initialX, initialY).scale(initialScale));
-
-
-
-    }, []);
-
-  return <svg ref={svgRef} className="tree-container"></svg>;
+  return <svg ref={svgRef} className="tree-container" style={{ width: '100%', height: '100%' }} ></svg>
 }
 
 export default TreeVisualization;
