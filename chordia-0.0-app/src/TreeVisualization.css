@@ -14,4 +14,14 @@
     font: 12px sans-serif;
     fill: #305d36; /* Dark green text */
   }
+
+.tree-container {
+  flex: 1;
+  width: 100%;
+  margin: 2%;
+  padding: 2%;
+  border: 2%;
+}
+
+
   

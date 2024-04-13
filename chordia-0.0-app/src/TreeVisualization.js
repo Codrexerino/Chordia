@@ -30,19 +30,24 @@ function TreeVisualization() {
 
   useEffect(() => {
     if (dimensions.width && dimensions.height) {
+
+    //fjerner alle tidligere elementer  
+    d3.select(svgRef.current).selectAll('*').remove();
+
     // Define the margins inside the useEffect hook
-    const margin = { top: 20, right: 120, bottom: 20, left: 120 };
+    const margin = { top: 20, right: 20, bottom: 20, left: 120 };
     const width = dimensions.width - margin.left - margin.right;
     const height = dimensions.height - margin.top - margin.bottom;
     
-    console.log('width', width);
-    console.log('height', height);
+    // console.log('width', width);
+    // console.log('height', height);
 
 
     
     // Now append the svg element to the ref and set up the viewBox
     const svg = d3.select(svgRef.current)
     .attr('viewBox', `0, 0, ${dimensions.width},${dimensions.height}`)
+    .attr('preserveAspectRatio', 'none')
     .append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`);
 
@@ -92,7 +97,7 @@ function TreeVisualization() {
     // tegner tekst i nodene
     nodeGroups.append("text")
       .attr("dy", "0.35em")
-      .attr("x", d => d.children ? -15 : 15) // Position text left of parent nodes, right of leaf nodes
+      .attr("x", d => d.children ? 15 : 15) // Position text left of parent nodes, right of leaf nodes
       .style("text-anchor", d => d.children ? "end" : "start")
       .text(d => d.data.name);
 

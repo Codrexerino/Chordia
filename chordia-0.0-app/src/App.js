@@ -5,7 +5,7 @@ import TreeVisualization from './TreeVisualization';
 
 function App() {
   return (
-    <div>
+    <div className="App">
       <Header title="Chordia 0.0" />
       <TreeVisualization />
     </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import './TreeVisualization.css';
+import './Header.css';
 
 function Header(props) {
   return (
