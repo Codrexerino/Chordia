@@ -4,7 +4,7 @@ import './Header.css';
 function Header(props) {
   return (
     <header>
-      <h1>{props.title}</h1>
+      <h1 className="header">Chordia 0.0</h1>
     </header>
   );
 }

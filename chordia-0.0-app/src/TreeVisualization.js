@@ -5,7 +5,14 @@ import { TreeData_H, TreeData_C } from './TreeData.js';
 
 function TreeVisualization() {
   const svgRef = useRef(null);
+  const [selectedNode, setSelectedNode] = useState(null); // velger node variabel
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
+
+  
+
+
+
 
   // This useEffect replaces your existing dimension setting logic
   useEffect(() => {
@@ -24,6 +31,10 @@ function TreeVisualization() {
     return () => {
       resizeObserver.disconnect();
     };
+
+
+
+    
   }, []);
 
 
@@ -49,7 +60,7 @@ function TreeVisualization() {
     .attr('viewBox', `0, 0, ${dimensions.width},${dimensions.height}`)
     .attr('preserveAspectRatio', 'none')
     .append('g')
-    .attr('transform', `translate(${margin.left},${margin.top})`);
+    .attr('transform', 'translate(0,0)');
 
 
 
@@ -60,6 +71,8 @@ function TreeVisualization() {
     const treeLayout = d3.tree()
       .size([width, height]);
     treeLayout(hierarchyRoot);
+
+ 
 
     hierarchyRoot.descendants().forEach(node => {
       node.y = height - node.y - margin.bottom; // This will flip the tree
@@ -75,6 +88,10 @@ function TreeVisualization() {
       .x(d => d.x)
       .y(d => d.y);
     
+
+
+
+     
     // tegner linker
     svg.selectAll(".link")
       .data(hierarchyRoot.links())
@@ -89,16 +106,38 @@ function TreeVisualization() {
       .enter().append("g")
       .attr("class", "node")
       .attr("transform", d => `translate(${d.x},${d.y})`);
+
+    // Click event handler
+    const handleNodeClick = (event, d) => {
+      // Fjern utheving fra alle noder
+      svg.selectAll('.node-circle')
+        .attr('stroke', null)
+        .attr('stroke-width', null);
+  
+    // Uthev den valgte noden
+    d3.select(event.currentTarget)
+    .select('circle')
+    .attr('stroke', 'red')
+    .attr('stroke-width', '3');
+    
+     // Oppdater tilstanden for å vise informasjon om den valgte noden
+     setSelectedNode(d);
+    };  
+
+     // Apply the click event handler
+     nodeGroups.on("click", handleNodeClick);
     
     // tegner sirkler rundt nodene?  
     nodeGroups.append("circle")
-      .attr("r", 10); // Set the radius as needed
+      .attr("r", dimensions.width / 35) // Set the radius as needed
+      .attr("class", "node-circle");
     
     // tegner tekst i nodene
     nodeGroups.append("text")
       .attr("dy", "0.35em")
-      .attr("x", d => d.children ? 15 : 15) // Position text left of parent nodes, right of leaf nodes
-      .style("text-anchor", d => d.children ? "end" : "start")
+      .attr("x", d => d.children ? 0 : 0) // Position text left of parent nodes, right of leaf nodes
+      .style("text-anchor", "middle")
+      .style("font-size", dimensions.width / 60) // Set the font size as needed
       .text(d => d.data.name);
 
 
@@ -123,10 +162,7 @@ function TreeVisualization() {
     .attr("d", d3.linkVertical()
       .x(d => d.x)
       .y(d => d.y))
-    .attr("fill", "none")
-    .attr("stroke", "grey") // Example: Red color for distinction
-    .attr("stroke-dasharray", "2,2")
-    .attr("stroke-width", "2px"); // Example: Dashed line for visual differentiation
+
 
     // After the tree layout is computed
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -137,10 +173,25 @@ function TreeVisualization() {
       if (node.y < minY) minY = node.y;
       if (node.y > maxY) maxY = node.y;
     });
+    
+    // Code from line 75-90
+    const xOffset = (maxX - minX) / 2;
+    const yOffset = (maxY - minY) / 2;
+
     }
   }, [dimensions]);
 
-  return <svg ref={svgRef} className="tree-container" style={{ width: '100%', height: '100%' }} ></svg>
+  return (
+  <div>
+    <svg ref={svgRef} className="tree-container" style={{ width: '100%', height: '100%' }} ></svg>
+    {selectedNode && (
+      <div className="node-info">
+        <p>Name:{selectedNode.data.name}</p>
+        <p>Description:{selectedNode.data.description}</p>
+      </div>
+  )}
+  </div>
+  );
 }
 
 export default TreeVisualization;

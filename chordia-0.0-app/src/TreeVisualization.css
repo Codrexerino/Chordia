@@ -1,9 +1,17 @@
 .link {
     fill: none;
-    stroke: #89c9b8; /* Forest green for links */
+    stroke: #196d56; /* Forest green for links */
     stroke-width: 2px;
   }
   
+.cross-link {
+  fill: none;
+  stroke: #196d56; /* Forest green for links */
+  stroke-width: 2px;
+  opacity: 0.3;
+}
+
+
   .nodeRect {
     fill: #d4ff8b; /* Dark Olive Green */
     stroke: #bbffbb; /* Dark Sea Green */
@@ -16,11 +24,17 @@
   }
 
 .tree-container {
+  display: block;
   flex: 1;
   width: 100%;
-  margin: 2%;
-  padding: 2%;
-  border: 2%;
+  margin: 1%;
+  padding: 1%;
+  border: 1%;
+}
+
+
+.node-circle {
+  fill: #bbffbb
 }
 
 
