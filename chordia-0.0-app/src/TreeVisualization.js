@@ -16,20 +16,20 @@ function TreeVisualization() {
 
   // This useEffect replaces your existing dimension setting logic
   useEffect(() => {
-    const resizeObserver = new ResizeObserver(entries => {
+    const observer = new ResizeObserver(entries => {
       for (let entry of entries) {
         const { width, height } = entry.contentRect;
-        setDimensions({ width, height });
         console.log('New width:', width, 'New height:', height); // Debug output
+        setDimensions({ width, height });
       }
     });
     if(svgRef.current) {
-      resizeObserver.observe(svgRef.current);
+      observer.observe(svgRef.current);
     }
     
     // Cleanup observer on component unmount
     return () => {
-      resizeObserver.disconnect();
+      if (observer) observer.disconnect();
     };
 
 
@@ -58,9 +58,10 @@ function TreeVisualization() {
     // Now append the svg element to the ref and set up the viewBox
     const svg = d3.select(svgRef.current)
     .attr('viewBox', `0, 0, ${dimensions.width},${dimensions.height}`)
-    .attr('preserveAspectRatio', 'none')
+    .attr('preserveAspectRatio', 'xMidYMid meet')
     .append('g')
     .attr('transform', 'translate(0,0)');
+    
 
 
 
@@ -97,6 +98,9 @@ function TreeVisualization() {
       .data(hierarchyRoot.links())
       .enter().append("path")
       .attr("class", "link")
+      .attr('d', d => linksGenerator({ source: d.source, target: { x: d.source.x, y: d.source.y }})) // Start link at source node
+      .transition()
+      .duration(750)
       .attr("d", linksGenerator); // Update the d attribute here
 
 
@@ -109,16 +113,19 @@ function TreeVisualization() {
 
     // Click event handler
     const handleNodeClick = (event, d) => {
-      // Fjern utheving fra alle noder
-      svg.selectAll('.node-circle')
-        .attr('stroke', null)
-        .attr('stroke-width', null);
+      
+    // Fjern utheving fra alle noder
+    d3.selectAll('.node-circle')
+      .classed('highlighted', false)
+      .attr('stroke', null)
+      .attr('stroke-width', null);
   
     // Uthev den valgte noden
     d3.select(event.currentTarget)
     .select('circle')
-    .attr('stroke', 'red')
-    .attr('stroke-width', '3');
+    .classed("highlighted", true)
+
+    //')
     
      // Oppdater tilstanden for å vise informasjon om den valgte noden
      setSelectedNode(d);
@@ -129,7 +136,9 @@ function TreeVisualization() {
     
     // tegner sirkler rundt nodene?  
     nodeGroups.append("circle")
-      .attr("r", dimensions.width / 35) // Set the radius as needed
+      .transition()
+      .duration(750)
+      .attr("r", (dimensions.width + dimensions.height) / 70) // Set the radius as needed
       .attr("class", "node-circle");
     
     // tegner tekst i nodene
@@ -137,7 +146,11 @@ function TreeVisualization() {
       .attr("dy", "0.35em")
       .attr("x", d => d.children ? 0 : 0) // Position text left of parent nodes, right of leaf nodes
       .style("text-anchor", "middle")
-      .style("font-size", dimensions.width / 60) // Set the font size as needed
+      .style("font-size", (dimensions.width + dimensions.height) / 100) // Set the font size as needed
+      .style("fill-opacity", 0)
+      .transition()
+      .duration(750)
+      .style("fill-opacity", 1)
       .text(d => d.data.name);
 
 
@@ -162,7 +175,21 @@ function TreeVisualization() {
     .attr("d", d3.linkVertical()
       .x(d => d.x)
       .y(d => d.y))
+      .on("mouseover", function(event, d) {
 
+    // Vis informasjonsboks med informasjon fra linken
+    d3.select("#link-info")
+          .style("left", (event.pageX + 10) + "px")
+          .style("top", (event.pageY + 10) + "px")
+          .select("#link-text")
+          .text(d.description); // Anta at hver link har en 'description' eiendom
+    
+        d3.select("#link-info").classed("hidden", false);
+      })
+      .on("mouseout", function() {
+        // Skjul informasjonsboksen
+        d3.select("#link-info").classed("hidden", true);  
+      });    
 
     // After the tree layout is computed
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -183,13 +210,17 @@ function TreeVisualization() {
 
   return (
   <div>
-    <svg ref={svgRef} className="tree-container" style={{ width: '100%', height: '100%' }} ></svg>
+    <svg ref={svgRef} className="tree-container" width={dimensions.width} height={dimensions.height}></svg>
     {selectedNode && (
-      <div className="node-info">
+      <div className={`node-info ${selectedNode ? 'visible' : ''}`}>
         <p>Name:{selectedNode.data.name}</p>
         <p>Description:{selectedNode.data.description}</p>
+        <button onClick={() => setSelectedNode(null)}>Close</button>
       </div>
   )}
+  <div id="link-info" className="hidden">
+      <p id="link-text"></p>
+    </div>
   </div>
   );
 }

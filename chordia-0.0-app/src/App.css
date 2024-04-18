@@ -1,19 +1,18 @@
 /* reset CSS fra noen default innstillinger? */
 html, body, #root {
-  margin: 0.1%;
-  padding: 0.1%;
-  border: 0.11%;
   height: 100%;
   width: 100%;
+  margin: 0.1%;
+  padding: 0.1%;
+  border: 0.1%;
+  
 }
 
 
 .App {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height:100%;
+  height: 100vh;
 }
 
 
