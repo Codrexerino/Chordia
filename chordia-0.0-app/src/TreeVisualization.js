@@ -3,13 +3,89 @@ import * as d3 from 'd3';
 import './TreeVisualization.css';
 import { TreeData_H, TreeData_C } from './TreeData.js';
 
+
+
+
 function TreeVisualization() {
   const svgRef = useRef(null);
   const [selectedNode, setSelectedNode] = useState(null); // velger node variabel
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [showMoreActive, setShowMoreActive] = useState(false); // tilstand for Show More-modus
+  const [originalPosition, setOriginalPosition] = useState({x: 0, y: 0});  // Opprinnelig posisjon for den valgte noden
+  const [isTreeVisible, setIsTreeVisible] = useState(false);
+  
+
+  // Effect hook to create and update the tree
+  useEffect(() => {
+    // Create the tree
+    const treeData = TreeData_H; // Replace with your actual tree data
+    const root = d3.hierarchy(treeData);
+    const treeLayout = d3.tree().size([dimensions.width, dimensions.height]);
+    treeLayout(root);
+
+    const svg = d3.select(svgRef.current);
+    const nodes = svg.selectAll('.node')
+      .data(root.descendants())
+      .enter()
+      .append('g')
+      .attr('class', 'node')
+      .attr('transform', (d) => `translate(${d.x}, ${d.y})`);
+
+    nodes.append('circle')
+      .attr('class', 'node-circle')
+      .attr('r', 5)
+      .on('click', handleNodeClick);
+
+    nodes.append('text')
+      .attr('class', 'node-info')
+      .text((d) => d.data.name);
+
+    // Rest of your tree creation and updating logic
+
+  }, [dimensions]);
+
+  // Definerer handleNodeClick
+  const handleNodeClick = (event, d) => {  
+    console.log(d3.select(event.currentTarget).select('circle').node());
+    // Fjern utheving fra alle noder
+    d3.selectAll('.node-circle').classed('highlighted', false);
+    // Uthev den valgte noden
+    d3.select(event.currentTarget).select('circle')
+      .classed('highlighted', true)
+      .style('fill','red');
+    // Oppdater tilstanden for å vise informasjon om den valgte noden
+    setSelectedNode(d);
+  }; 
 
 
 
+    
+  // Definer handleShowMoreClick
+  const handleShowMoreClick = () => {
+    setShowMoreActive(current => !current);
+    if (!showMoreActive) {
+      d3.selectAll('.node, .link, .cross-link, .node-info')
+        .style('opacity', 0);  // Skjul alle andre elementer
+
+    // Unntak for den uthevede noden, gjør den synlig
+    const highlightedNodeSelector = `.node-${selectedNode.data.name.replace(/\s+/g, '-')}`;
+    d3.select(highlightedNodeSelector)
+      .classed('inFocus', true)
+      .style('opacity', 1)
+      
+
+    } else {
+      handleBackClick();  // Bruk handleBackClick for å tilbakestille visningen
+    }
+  };
+
+  //definerer handleBackClick
+  const handleBackClick = () => {
+    setShowMoreActive(false); // Deaktiver Show More-modus
+    d3.selectAll('.node, .link, .cross-link, .node-info')
+      .style('opacity', 1) // Gjør alle elementene synlige igjen
+      .classed('inFocus', false); // Fjern inFocus fra alle noder
+  };
 
 
   // This useEffect replaces your existing dimension setting logic
@@ -30,12 +106,19 @@ function TreeVisualization() {
       if (observer) observer.disconnect();
     };
 
-
-
-    
   }, []);
 
 
+  
+    useEffect(() => {
+
+
+      const svgElement = d3.select(svgRef.current);
+    if (!svgElement.select('.node').empty()) {
+      // SVG-elementene eksisterer allerede, ikke opprett dem på nytt
+      return;
+}
+    }, []);
 
   useEffect(() => {
     if (dimensions.width && dimensions.height) {
@@ -48,8 +131,6 @@ function TreeVisualization() {
     const width = dimensions.width - margin.left - margin.right;
     const height = dimensions.height - margin.top - margin.bottom;
     
-    // console.log('width', width);
-    // console.log('height', height);
 
 
     
@@ -95,8 +176,6 @@ function TreeVisualization() {
       .enter().append("path")
       .attr("class", "link")
       .attr('d', d => linksGenerator({ source: d.source, target: { x: d.source.x, y: d.source.y }})) // Start link at source node
-      .transition()
-      .duration(750)
       .attr("d", linksGenerator); // Update the d attribute here
 
 
@@ -106,28 +185,7 @@ function TreeVisualization() {
       .enter().append("g")
       .attr("class", "node")
       .attr("transform", d => `translate(${d.x},${d.y})`)
-      
 
-    
-    // Click event handler
-    const handleNodeClick = (event, d) => {
-      
-    // Fjern utheving fra alle noder
-    d3.selectAll('.node-circle')
-      .classed('highlighted', false)
-      .attr('stroke', null)
-      .attr('stroke-width', null);
-  
-    // Uthev den valgte noden
-    d3.select(event.currentTarget)
-    .select('circle')
-    .classed("highlighted", true)
-
-    //')
-    
-     // Oppdater tilstanden for å vise informasjon om den valgte noden
-     setSelectedNode(d);
-    };  
 
      // Apply the click event handler
      nodeGroups.on("click", handleNodeClick);
@@ -136,9 +194,8 @@ function TreeVisualization() {
     nodeGroups.append("circle")
     .attr("r", (dimensions.width + dimensions.height) / 70) // Set the radius as needed
     .attr("class", "node-circle")
-    .classed("highlighted", d => d === selectedNode)
-    .transition()
-    .duration(750);     
+    
+    
 
       
     // tegner tekst i nodene
@@ -147,11 +204,9 @@ function TreeVisualization() {
       .attr("x", d => d.children ? 0 : 0) // Position text left of parent nodes, right of leaf nodes
       .style("text-anchor", "middle")
       .style("font-size", (dimensions.width + dimensions.height) / 100) // Set the font size as needed
-      .style("fill-opacity", 0)
-      .transition()
-      .duration(750)
-      .style("fill-opacity", 1)
-      .text(d => d.data.name);
+      .text(d => d.data.name)
+      .attr("class", "node-text")
+
 
 
     // lager et kartover hvor nodene er lagd over er
@@ -192,6 +247,7 @@ function TreeVisualization() {
       });    
 
 
+  
 
     // After the tree layout is computed
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -207,18 +263,29 @@ function TreeVisualization() {
     const xOffset = (maxX - minX) / 2;
     const yOffset = (maxY - minY) / 2;
 
+      setTimeout(() => {
+        setIsTreeVisible(true);
+      }, 50);
     }
-  }, [dimensions]);
+  }, [dimensions, selectedNode]);
+
+
+
+
+
 
   return (
   <div>
-    <svg ref={svgRef} className="tree-container" width={dimensions.width} height={dimensions.height}></svg>
+    <svg ref={svgRef} className={`tree-container ${isTreeVisible ? 'visible' : ''}`} width={dimensions.width} height={dimensions.height}></svg>
+    {showMoreActive && (
+    <button className="back-button" onClick={handleBackClick}>Back</button>
+    )}
     {selectedNode && (
       <div className={`node-info ${selectedNode ? 'visible' : ''}`}>
         <p>Name:{selectedNode.data.name}</p>
         <p>Description:{selectedNode.data.description}</p>
         <button onClick={() => setSelectedNode(null)}>Close</button>
-        {/* <button onClick={handleShowMoreClick}>Show more</button> */}
+        <button onClick={handleShowMoreClick}>Show more</button>
       </div>
   )}
   <div id="link-info" className="hidden">

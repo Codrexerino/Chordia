@@ -1,53 +1,80 @@
-
-
-.link {
-    transition: all 0.3s ease;
-    fill: none;
-    stroke: #196d56; /* Forest green for links */
-    stroke-width: 2px;
-  }
-  
-.cross-link {
-  fill: none;
-  stroke: #196d56; /* Forest green for links */
-  stroke-width: 2px;
-  opacity: 0.0;
-}
-
-
-
-  .nodeRect {
-    fill: #d4ff8b; /* Dark Olive Green */
-    stroke: #bbffbb; /* Dark Sea Green */
-    stroke-width: 3px;
-  }
-  
-  text {
-    transition: all 0.3s ease;
-    font: 12px sans-serif;
-    fill: #096415; /* Dark green text */
-  }
-
 .tree-container {
   height: 100vh;
   width: 100%;
   display: block;
   overflow: visible;
+  opacity: 0;
+  transition: 1s ease-in-out;
+}
+
+.tree-container.visible {
+  opacity: 1;
+}
+
+
+
+.link {
+    fill: none;
+    stroke: #196d56; /* Forest green for links */
+    stroke-width: 2px;
+}
+  
+.cross-link {
+  fill: none;
+  stroke: #196d56; /* Forest green for links */
+  stroke-width: 2px;
+}
+  
+.node-text {
+    font: 12px sans-serif;
+    fill: #096415; /* Dark green text */
 }
 
 
 .node-circle {
-  transition: all 0.3s ease;
-  fill: #bbffbb
+  fill: #bbffbb;
 }
 
 
+/* slight highligt */
 .node-circle.highlighted {
+  fill: rgb(0, 255, 149);
   stroke: white;
   Stroke-width: 5;
   transform: scale(1.2); /* forstørrer noden 1,5 ganger */
-  filter: drop-shadow(0px 0px 5px rgba(0,0,0,0.5))
+  filter: drop-shadow(0px 0px 5px rgba(0,0,0,0.5));
 }
+
+
+/* max highligt */
+.inFocus {
+  cursor: pointer;
+  stroke: gold;
+  stroke-width: 3px;
+  fill: red;
+}
+
+.inFocus circle {
+  fill: red; /* Gi sirkelen en rød farge */
+  stroke: gold; /* Gullkant rundt sirkelen */
+  stroke-width: 3px; /* Tykkere kant */
+}
+
+.inFocus text {
+  font-weight: bold;
+  fill: #fff;
+}
+
+
+
+.back-button {
+  position: fixed;  
+  top: 10px;        
+  right: 10px;      
+  opacity: 1; 
+  z-index: 1000; 
+}
+
 
 .node-info {
   position: fixed;
@@ -72,14 +99,6 @@
 
 
 
-.node.hidden {
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.node.inFocus {
-  transform: scale(2);
-}
 
 
 
