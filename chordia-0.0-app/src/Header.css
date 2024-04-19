@@ -1,5 +1,17 @@
+header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .header {
   color: #855000;
-  padding: 1px;
-  text-align: center;
+  font-size: 2em;
+  margin-right: 3px;
+  flex: none;
+}
+
+#logo {
+  height: 4em;
+  width: auto;
 }
