@@ -7,17 +7,7 @@ function TreeVisualization() {
   const svgRef = useRef(null);
   const [selectedNode, setSelectedNode] = useState(null); // velger node variabel
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [isFiltered, setIsFiltered] = useState(false); //Tilstand for å vite om noder skal være synlige eller usynlige
-  const [inFocus, setInFocus] = useState(null); // Tilstand for noden som skal være synlig i fokus
 
-  const handleShowMoreClick = () => {
-    setIsFiltered(current => !current); // Toggler filtreringstilstanden
-  if (!isFiltered && selectedNode) {
-    setInFocus(selectedNode); // Setter valgt node i fokus hvis filtrering ikke allerede er aktiv.
-  } else {
-    setInFocus(null); // Fjerner fokus fra alle noder når filtrering deaktiveres.
-  }
-};
 
 
 
@@ -48,7 +38,6 @@ function TreeVisualization() {
 
 
   useEffect(() => {
-    console.log("isFiltered has changed", isFiltered);
     if (dimensions.width && dimensions.height) {
 
     //fjerner alle tidligere elementer  
@@ -98,13 +87,6 @@ function TreeVisualization() {
       .x(d => d.x)
       .y(d => d.y);
     
-    // Oppdaterer nodene basert på inFocus og isFiltered tilstandene.
-    svg.selectAll(".node").each(function(d) {
-      const node = d3.select(this);
-      node.classed("hidden", isFiltered && selectedNode !== d); // Skjuler noder som ikke er valgt.
-      node.classed("inFocus", selectedNode === d); // Markerer den valgte noden som inFocus.
-    });
-
 
      
     // tegner linker
@@ -124,14 +106,8 @@ function TreeVisualization() {
       .enter().append("g")
       .attr("class", "node")
       .attr("transform", d => `translate(${d.x},${d.y})`)
-      .on("click", handleNodeClick);
+      
 
-    nodeGroups.each(function(d) {
-      const node = d3.select(this);
-      const isHighlighted = node.select('circle').classed('highlighted');
-      node.classed("hidden", isFiltered && !isHighlighted);
-      node.classed("inFocus", d === selectedNode);
-    });  
     
     // Click event handler
     const handleNodeClick = (event, d) => {
@@ -216,9 +192,6 @@ function TreeVisualization() {
       });    
 
 
-      d3.selectAll(".node")
-      .classed("inFocus", node => inFocus && node === inFocus)
-      .classed('hidden', node => isFiltered && node !== inFocus);
 
     // After the tree layout is computed
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -235,7 +208,7 @@ function TreeVisualization() {
     const yOffset = (maxY - minY) / 2;
 
     }
-  }, [dimensions, selectedNode, isFiltered, inFocus]);
+  }, [dimensions]);
 
   return (
   <div>
@@ -245,7 +218,7 @@ function TreeVisualization() {
         <p>Name:{selectedNode.data.name}</p>
         <p>Description:{selectedNode.data.description}</p>
         <button onClick={() => setSelectedNode(null)}>Close</button>
-        <button onClick={handleShowMoreClick}>Show more</button>
+        {/* <button onClick={handleShowMoreClick}>Show more</button> */}
       </div>
   )}
   <div id="link-info" className="hidden">
