@@ -189,48 +189,74 @@ function TreeVisualization() {
 
 
 // Highlight og inFocus logikk
-const handleNodeClick = (event, d) => {  
+const handleNodeClick = (event, d) => {
+  const currentNode = d3.select(event.currentTarget);  
   const currentCircle = d3.select(event.currentTarget).select('circle');
   const isAlreadyHighlighted = currentCircle.classed('highlighted');
 
   // Fjern utheving fra alle noder
-  d3.selectAll('.node-circle')
-    .classed('highlighted', false)
+  d3.selectAll('.node-circle').classed('highlighted', false).classed('inFocus', false);
+  d3.selectAll('.node, .link, .cross-link').classed('hidden', false);
 
   if (isAlreadyHighlighted) {
-      currentCircle
-        .classed('inFocus', true);
+      currentCircle.classed('inFocus', true);
       d3.selectAll('.node, .link, .cross-link').classed('hidden', true);
-
-      d3.select(event.currentTarget).classed('hidden', false);
-
+      currentNode.classed('hidden', false);
       setSelectedNode(d);
       setSelectedNodeKey(d.data.name);
+    //flytter noden 
+      currentNode.transition()
+        .duration(500)
+        .attr("transform", "translate(100, 100)");
+        
+        hideNodeInfo();
+
   } else {
-    currentCircle
-    .classed('highlighted', true);
-    d3.select('.node, .link, .cross-link').classed('hidden', false);
+    currentCircle.classed('highlighted', true);
+    displayNodeInfo(d);
     setSelectedNode(d);
-    setSelectedNodeKey(null);
   }
 }; 
+
+
+// Funksjon for å vise node-info
+function displayNodeInfo(d) {
+  const infoContainer = d3.select('#node-info-container');
+  if (d) {  // Sjekker om det er data å vise
+    infoContainer.html('')  // Tømmer containeren først
+      .append('div')
+      .attr('class', 'node-info visible')
+      .html(`<p>Name: ${d.data.name}</p><p>Description: ${d.data.description}</p>`);
+  } else {
+    hideNodeInfo(); // Ingen data å vise, skjul info-boksen
+  }
+}
+
+// Funksjon for å skjule node-info
+function hideNodeInfo() {
+  d3.select('#node-info-container').html('');  // Tømmer innholdet helt
+}
 
 
 const handleBackClick = () => {
   // Remove all focus and highlighting
   d3.selectAll('.node-circle')
+    .classed('highlighted', false)
     .classed('inFocus', false);
 
   // Make all nodes visible again
   d3.selectAll('.node, .link, .cross-link')
-    .classed('hidden', false);
+    .classed('hidden', false)
+    .transition()
+    .duration(500)
+    .attr("transform", d => `translate(${d.x},${d.y})`);
 
   if (selectedNodeKey) {
-    const nodeToHighlight = d3.selectAll('.node-circle').filter(function(d) {
-      return d.data.name === selectedNodeKey;
-    });
-    nodeToHighlight
-      .classed('highlighted', true);
+    const nodeToHighlight = d3.selectAll('.node').filter(d => d.data.name === selectedNodeKey);
+    nodeToHighlight.select('.node-circle').classed('highlighted', true);
+    displayNodeInfo(selectedNode);
+  } else {
+    hideNodeInfo();
   }
 
 
@@ -239,23 +265,12 @@ const handleBackClick = () => {
 };
 
 
-
-
-
-
-
   return (
   <div>
     <button onClick={handleResize}>Rescale Tree</button>
     <svg ref={svgRef} className={`tree-container ${isTreeVisible ? 'visible' : ''}`} width={dimensions.width} height={dimensions.height}></svg>
+    <div id="node-info-container"></div>
     <button className="back-button" onClick={handleBackClick}>Back</button>
-    {selectedNode && (
-      <div className={`node-info ${selectedNode ? 'visible' : ''}`}>
-        <p>Name:{selectedNode.data.name}</p>
-        <p>Description:{selectedNode.data.description}</p>
-        {/*<button onClick={() => setSelectedNode(null)}>Close</button>*/}
-      </div>
-  )}
   <div id="link-info" className="hidden">
       <p id="link-text"></p>
     </div>
