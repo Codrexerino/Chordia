@@ -14,9 +14,8 @@ function TreeVisualization() {
     width: window.innerWidth,
     height: window.innerHeight
   });
-  const [showMoreActive, setShowMoreActive] = useState(false); // tilstand for Show More-modus
-  const [originalPosition, setOriginalPosition] = useState({x: 0, y: 0});  // Opprinnelig posisjon for den valgte noden
   const [isTreeVisible, setIsTreeVisible] = useState(false);
+  const [isInFocus, setIsInFocus] = useState(false);
   
 
 
@@ -199,9 +198,14 @@ const handleNodeClick = (event, d) => {
   d3.selectAll('.node, .link, .cross-link').classed('hidden', false);
 
   if (isAlreadyHighlighted) {
+      setIsInFocus(true);
+
       currentCircle.classed('inFocus', true);
+      
       d3.selectAll('.node, .link, .cross-link').classed('hidden', true);
       currentNode.classed('hidden', false);
+
+
       setSelectedNode(d);
       setSelectedNodeKey(d.data.name);
     //flytter noden 
@@ -212,7 +216,9 @@ const handleNodeClick = (event, d) => {
         hideNodeInfo();
 
   } else {
+    setIsInFocus(false);
     currentCircle.classed('highlighted', true);
+
     displayNodeInfo(d);
     setSelectedNode(d);
   }
@@ -267,10 +273,17 @@ const handleBackClick = () => {
 
   return (
   <div>
-    <button onClick={handleResize}>Rescale Tree</button>
+    
     <svg ref={svgRef} className={`tree-container ${isTreeVisible ? 'visible' : ''}`} width={dimensions.width} height={dimensions.height}></svg>
     <div id="node-info-container"></div>
+    <select className={`dropdown-menu ${isInFocus ? 'visible' : 'hidden'}`}>
+      <option value="option1">Noter</option>
+      <option value="option2">Piano Roll</option>
+      <option value="option3">Piano</option>
+      <option value="option4">Guitar</option>
+    </select>
     <button className="back-button" onClick={handleBackClick}>Back</button>
+    <button className="rescale-button" onClick={handleResize}>Rescale Tree</button>
   <div id="link-info" className="hidden">
       <p id="link-text"></p>
     </div>
