@@ -12,7 +12,6 @@
 }
 
 
-
 .link {
     fill: none;
     stroke: #196d56; /* Forest green for links */
@@ -36,34 +35,42 @@
 }
 
 
-/* slight highligt */
+/* Highlight node */
 .node-circle.highlighted {
   fill: rgb(0, 255, 149);
   stroke: white;
-  Stroke-width: 5;
+  stroke-width: 5;
   transform: scale(1.2); /* forstørrer noden 1,5 ganger */
   filter: drop-shadow(0px 0px 5px rgba(0,0,0,0.5));
+  transition: all 0.3s ease;
 }
+/* Highlight node */
 
 
-/* max highligt */
-.inFocus {
-  cursor: pointer;
-  stroke: gold;
-  stroke-width: 3px;
-  fill: red;
+/* Put node in focus */
+
+
+.node-circle.inFocus {
+  fill: rgb(0, 255, 149);
+  stroke: white;
+  stroke-width: 5;
+  transform: scale(2); /* forstørrer noden 1,5 ganger */
+  filter: drop-shadow(0px 0px 5px rgba(0,0,0,0.5));
+  transition: all 0.3s ease;
 }
 
-.inFocus circle {
-  fill: red; /* Gi sirkelen en rød farge */
-  stroke: gold; /* Gullkant rundt sirkelen */
-  stroke-width: 3px; /* Tykkere kant */
-}
+/* Put node in focus */
 
-.inFocus text {
-  font-weight: bold;
-  fill: #fff;
+
+/* Makes nodes invisible and prohibits interaction with other hidden elements */
+.hidden {
+  opacity: 0; /* Hides the node */
+  pointer-events: none;
+  transition: opacity 0.3s ease; /* Smooth transition for fading in and out */
 }
+/* Makes nodes invisible */
+
+
 
 
 
@@ -78,17 +85,17 @@
 
 .node-info {
   position: fixed;
-  top: 50%;
-  left: 50%;
+  top: 90%;
+  left: 30%;
   transform: translate(-50%, -50%) scale(0); /* Startet som skalert ned */
   transition: transform 0.5s ease;
   background-color: white;
   padding: 20px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.2);
   z-index: 10; /* Sørg for at boksen ligger over andre elementer */
-  max-height: 80vh;
+  max-height: 50vh;
   overflow-y: auto; /* Legg til rulling hvis innholdet er for langt */
-  width: 80vw; /* Bredde av boksen */
+  width: 50vw; /* Bredde av boksen */
 }
 
 /* Klassen som aktiveres når en node klikkes */
