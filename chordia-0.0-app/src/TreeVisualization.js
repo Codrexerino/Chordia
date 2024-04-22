@@ -3,9 +3,6 @@ import * as d3 from 'd3';
 import './TreeVisualization.css';
 import { TreeData_H, TreeData_C } from './TreeData.js';
 
-
-
-
 function TreeVisualization() {
   const svgRef = useRef(null);
   const [selectedNode, setSelectedNode] = useState(null); // velger node variabel
@@ -16,6 +13,8 @@ function TreeVisualization() {
   });
   const [isTreeVisible, setIsTreeVisible] = useState(false);
   const [isInFocus, setIsInFocus] = useState(false);
+  const [imageSource, setImageSource] = useState('');
+ 
   
 
 
@@ -214,12 +213,14 @@ const handleNodeClick = (event, d) => {
         .attr("transform", "translate(100, 100)");
         
         hideNodeInfo();
+       // hideSheetMusic();
 
   } else {
     setIsInFocus(false);
     currentCircle.classed('highlighted', true);
 
     displayNodeInfo(d);
+    //displaySheetMusic(d.data.midiFile);
     setSelectedNode(d);
   }
 }; 
@@ -271,17 +272,39 @@ const handleBackClick = () => {
 };
 
 
+// Function to handle dropdown change
+const handleDropdownChange = (event) => {
+  const selectedOption = event.target.value;
+  let newImageSource = '';
+
+  switch (selectedOption) {
+    case 'option1':
+      newImageSource = '/C_Major_Scale_Sheet.png';
+      break;
+    case 'option2':
+      newImageSource = '/C_Major_Scale_Tab.png';
+      break;
+    // Add more cases for other options
+    default:
+      break;
+  }
+
+  setImageSource(newImageSource);
+};
+
+
+
   return (
   <div>
-    
+    <img src={imageSource} alt="chosen picture" className={`dropdown-picture ${isInFocus ? 'visible' : 'hidden'}`} />
     <svg ref={svgRef} className={`tree-container ${isTreeVisible ? 'visible' : ''}`} width={dimensions.width} height={dimensions.height}></svg>
     <div id="node-info-container"></div>
-    <select className={`dropdown-menu ${isInFocus ? 'visible' : 'hidden'}`}>
+    <select className={`dropdown-menu ${isInFocus ? 'visible' : 'hidden'}`} onChange={handleDropdownChange}>
       <option value="option1">Noter</option>
-      <option value="option2">Piano Roll</option>
-      <option value="option3">Piano</option>
-      <option value="option4">Guitar</option>
+      <option value="option2">Tabs</option>
+      {/* Add more options as needed */}
     </select>
+    <audio controls src='/c-major-scale.mp3'className={`audio ${isInFocus ? 'visible' : 'hidden'}`}>Your browser does not support the audio element.</audio>
     <button className="back-button" onClick={handleBackClick}>Back</button>
     <button className="rescale-button" onClick={handleResize}>Rescale Tree</button>
   <div id="link-info" className="hidden">
