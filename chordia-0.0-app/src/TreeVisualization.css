@@ -57,6 +57,7 @@
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
 }
 
+
 .node-info.visible {
   display: block;
 }
@@ -98,14 +99,6 @@
 
 
 
-
-
-.back-button {
-  position: fixed;  
-  top: 78%;        
-  right: 10%;      
-  opacity: 1; 
-}
 
 
 .rescale-button {

@@ -233,7 +233,6 @@ const handleNodeClick = (event, d) => {
 
 function toggleFocus(shouldFocus, currentNode, node, d) {
   setIsInFocus(shouldFocus);
-
   if (shouldFocus) {
     // Set focus on the node
     displayFocus(currentNode, node, d);
@@ -243,11 +242,9 @@ function toggleFocus(shouldFocus, currentNode, node, d) {
   }
 }
 
+
+
 function displayFocus(currentNode, node, d) {
-
-
-  
-
   setSelectedNode(node);
   setSelectedNodeKey(node.data.name);
 
@@ -272,14 +269,10 @@ function displayFocus(currentNode, node, d) {
 
 function hideFocus(currentNode, d) {
   const originalPosition = nodePositions[d.data.name];
-
-
+  
   currentNode.transition()
-  .duration(500)
-  .attr("transform", `translate(${originalPosition.x},${originalPosition.y})`);
-    
-
-
+    .duration(500)
+    .attr("transform", `translate(${originalPosition.x},${originalPosition.y})`);
     
   d3.selectAll('.node-circle').classed('inFocus', false);    
   d3.selectAll('.node, .link, .cross-link').classed('hidden', false)
