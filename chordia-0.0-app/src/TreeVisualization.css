@@ -92,7 +92,6 @@
 /* Makes nodes invisible and prohibits interaction with other hidden elements */
 .hidden {
   opacity: 0; /* Hides the node */
-  pointer-events: none;
   transition: opacity 0.3s ease; /* Smooth transition for fading in and out */
 }
 /* Makes nodes invisible */

@@ -14,7 +14,7 @@ function TreeVisualization() {
   const [isTreeVisible, setIsTreeVisible] = useState(false);
   const [isInFocus, setIsInFocus] = useState(false);
   const [imageSource, setImageSource] = useState('');
- 
+  const [nodePositions, setNodePositions] = useState({});
   
 
 
@@ -55,6 +55,12 @@ function TreeVisualization() {
           // Update the x and y attributes of the nodes and links
           node.x += margin.left;
           node.y += margin.top;
+
+          setNodePositions(prevPositions => ({
+            ...prevPositions,
+            [node.data.name]: { x: node.x, y: node.y }
+        }));
+
         });
     
         // Definerer linker basert på hierakial verdier
@@ -74,13 +80,23 @@ function TreeVisualization() {
           .attr("d", linksGenerator); // Update the d attribute here
     
     
+
+        // lager et kartover hvor nodene er lagd over er
+        const nodesMap = new Map();
+        hierarchyRoot.descendants().forEach(d => {
+          nodesMap.set(d.data.name, d);
+        });
+  
+
         // tegner noder
         const nodeGroups = svg.selectAll(".node")
           .data(hierarchyRoot.descendants())
           .enter().append("g")
           .attr("class", "node")
           .attr("transform", d => `translate(${d.x},${d.y})`)
-          .on("click", handleNodeClick);
+          .on("click", (event, d) => {
+            handleNodeClick(event, d, d.data.name, d.x, d.y);
+        });
     
         // tegner sirkler rundt nodene?  
         nodeGroups.append("circle")
@@ -101,11 +117,7 @@ function TreeVisualization() {
     
     
     
-        // lager et kartover hvor nodene er lagd over er
-        const nodesMap = new Map();
-        hierarchyRoot.descendants().forEach(d => {
-          nodesMap.set(d.data.name, d);
-        });
+        
     
         // Konverterer source og target til D3 nodene ifølge kartet
         const crossLinks = TreeData_C.map(link => ({
@@ -188,43 +200,113 @@ function TreeVisualization() {
 
 // Highlight og inFocus logikk
 const handleNodeClick = (event, d) => {
+  //console.log("nodesMap inside handleNodeClick:", nodesMap.get(node.data.name));
+
   const currentNode = d3.select(event.currentTarget);  
   const currentCircle = d3.select(event.currentTarget).select('circle');
-  const isAlreadyHighlighted = currentCircle.classed('highlighted');
-
-  // Fjern utheving fra alle noder
-  d3.selectAll('.node-circle').classed('highlighted', false).classed('inFocus', false);
-  d3.selectAll('.node, .link, .cross-link').classed('hidden', false);
-
-  if (isAlreadyHighlighted) {
-      setIsInFocus(true);
-
-      currentCircle.classed('inFocus', true);
-      
-      d3.selectAll('.node, .link, .cross-link').classed('hidden', true);
-      currentNode.classed('hidden', false);
+  const isCurrentlyHighlighted = currentCircle.classed('highlighted');
+  const isCurrentlyFocused = currentCircle.classed('inFocus');
 
 
-      setSelectedNode(d);
-      setSelectedNodeKey(d.data.name);
-    //flytter noden 
-      currentNode.transition()
-        .duration(500)
-        .attr("transform", "translate(100, 100)");
-        
-        hideNodeInfo();
-       // hideSheetMusic();
 
-  } else {
-    setIsInFocus(false);
+  if (isCurrentlyFocused) {
+    // Node is currently focused and clicked again, remove focus
+    toggleFocus(false, currentNode, d);
     currentCircle.classed('highlighted', true);
+    currentCircle.classed('inFocus', false);
+  } else if (isCurrentlyHighlighted) {
+    // Node is highlighted and clicked, set focus
+    toggleFocus(true, currentNode, d);
+    currentCircle
+    .classed('highlighted', false)
+    .classed('inFocus', true);
+  } else {
+    // Node is not highlighted, set it as highlighted
+    d3.selectAll('.node-circle')
+      .classed('highlighted', false)
+      .classed('inFocus', false);
 
-    displayNodeInfo(d);
-    //displaySheetMusic(d.data.midiFile);
-    setSelectedNode(d);
+    currentCircle.classed('highlighted', true);
   }
-}; 
+};
+    
 
+function toggleFocus(shouldFocus, currentNode, node, d) {
+  setIsInFocus(shouldFocus);
+
+  if (shouldFocus) {
+    // Set focus on the node
+    displayFocus(currentNode, node, d);
+  } else {
+    // Remove focus from the node
+    hideFocus(currentNode, node, d);
+  }
+}
+
+function displayFocus(currentNode, node, d) {
+
+
+  
+
+  setSelectedNode(node);
+  setSelectedNodeKey(node.data.name);
+
+
+
+  const infoContainer = d3.select('#node-info-container');
+  infoContainer.html('')
+    .append('div')
+    .attr('class', 'node-info visible')
+    .html(`<strong>Name:</strong> ${node.data.name}<br><strong>Description:</strong> ${node.data.description}`);
+
+  d3.selectAll('.node, .link, .cross-link').classed('hidden', true);
+
+
+  currentNode.classed('hidden', false)
+    .classed('inFocus', true)
+    .transition()
+    .duration(500)
+    .attr("transform", "translate(100, 100)"); // Adjust node position for focus
+}
+
+
+function hideFocus(currentNode, d) {
+  const originalPosition = nodePositions[d.data.name];
+
+
+  currentNode.transition()
+  .duration(500)
+  .attr("transform", `translate(${originalPosition.x},${originalPosition.y})`);
+    
+
+
+    
+  d3.selectAll('.node-circle').classed('inFocus', false);    
+  d3.selectAll('.node, .link, .cross-link').classed('hidden', false)
+  
+
+  // Clear any node-specific information display
+  const infoContainer = d3.select('#node-info-container');
+  infoContainer.html('');
+
+  // Update the state to reflect that no node is in focus
+  //setSelectedNode(null);
+  //setSelectedNodeKey(null);
+
+  currentNode.select('.node-circle').classed('highlighted', true);
+  // Set the node as 'highlighted' to indicate it's the previously focused node
+
+}
+
+
+
+  
+
+
+
+
+
+/*
 
 // Funksjon for å vise node-info
 function displayNodeInfo(d) {
@@ -235,9 +317,10 @@ function displayNodeInfo(d) {
       .attr('class', 'node-info visible')
       .html(`<p>Name: ${d.data.name}</p><p>Description: ${d.data.description}</p>`);
   } else {
-    hideNodeInfo(); // Ingen data å vise, skjul info-boksen
+//    hideNodeInfo(); // Ingen data å vise, skjul info-boksen
   }
 }
+
 
 // Funksjon for å skjule node-info
 function hideNodeInfo() {
@@ -270,7 +353,7 @@ const handleBackClick = () => {
   setSelectedNode(null);
   setSelectedNodeKey(null);
 };
-
+*/
 
 // Function to handle dropdown change
 const handleDropdownChange = (event) => {
@@ -305,7 +388,7 @@ const handleDropdownChange = (event) => {
       {/* Add more options as needed */}
     </select>
     <audio controls src='/c-major-scale.mp3'className={`audio ${isInFocus ? 'visible' : 'hidden'}`}>Your browser does not support the audio element.</audio>
-    <button className="back-button" onClick={handleBackClick}>Back</button>
+    {/*<button className="back-button" onClick={handleBackClick}>Back</button>*/}
     <button className="rescale-button" onClick={handleResize}>Rescale Tree</button>
   <div id="link-info" className="hidden">
       <p id="link-text"></p>
