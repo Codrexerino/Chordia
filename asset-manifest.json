@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/Chordia/chordia-0.0-app/static/css/main.b0d4bc4a.css",
+    "main.js": "/Chordia/chordia-0.0-app/static/js/main.50618b78.js",
+    "static/js/488.15608932.chunk.js": "/Chordia/chordia-0.0-app/static/js/488.15608932.chunk.js",
+    "index.html": "/Chordia/chordia-0.0-app/index.html",
+    "main.b0d4bc4a.css.map": "/Chordia/chordia-0.0-app/static/css/main.b0d4bc4a.css.map",
+    "main.50618b78.js.map": "/Chordia/chordia-0.0-app/static/js/main.50618b78.js.map",
+    "488.15608932.chunk.js.map": "/Chordia/chordia-0.0-app/static/js/488.15608932.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.b0d4bc4a.css",
+    "static/js/main.50618b78.js"
+  ]
+}
