@@ -1,5 +1,5 @@
 {
-  "homepage": "http://Codrexerino.github.io/Chordia/chordia-0.0-app",
+  "homepage": "http://Codrexerino.github.io/Chordia/chordia-0.0-app/",
   "name": "chordia-0.0-app",
   "version": "0.1.0",
   "private": true,
@@ -19,7 +19,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build -r <http://Codrexerino.github.io/Chordia-0.0-app.git>"
+    "deploy": "gh-pages -d build"
   },
   "eslintConfig": {
     "extends": [
