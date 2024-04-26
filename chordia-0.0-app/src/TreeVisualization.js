@@ -78,6 +78,7 @@ function TreeVisualization() {
           .attr("class", "link")
           .attr('d', d => linksGenerator({ source: d.source, target: { x: d.source.x, y: d.source.y }})) // Start link at source node
           .attr("d", linksGenerator); // Update the d attribute here
+          
     
     
 

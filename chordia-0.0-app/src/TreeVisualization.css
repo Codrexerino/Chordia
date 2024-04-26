@@ -15,13 +15,19 @@
 .link {
     fill: none;
     stroke: #196d56; /* Forest green for links */
-    stroke-width: 2px;
+    stroke-width: 7px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
+
   
 .cross-link {
   fill: none;
   stroke: #196d56; /* Forest green for links */
   stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  z-index: -100;
 }
   
 .node-text {
