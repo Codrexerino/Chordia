@@ -101,7 +101,7 @@ function TreeVisualization() {
     
         // tegner sirkler rundt nodene?  
         nodeGroups.append("circle")
-        .attr("r", (dimensions.width + dimensions.height) / 70) // Set the radius as needed
+        .attr("r", (dimensions.width + dimensions.height) / 90) // Set the radius as needed
         .attr("class", "node-circle")
         
         
@@ -112,7 +112,7 @@ function TreeVisualization() {
           .attr("dy", "0.35em")
           .attr("x", d => d.children ? 0 : 0) // Position text left of parent nodes, right of leaf nodes
           .style("text-anchor", "middle")
-          .style("font-size", (dimensions.width + dimensions.height) / 100) // Set the font size as needed
+          .style("font-size", (dimensions.width + dimensions.height) / 200) // Set the font size as needed
           .text(d => d.data.name)
           .attr("class", "node-text")
     
