@@ -33,22 +33,32 @@ function TreeVisualization() {
         const svg = d3.select(svgRef.current)
         .attr('viewBox', `0, 0, ${dimensions.width},${dimensions.height}`)
         .attr('preserveAspectRatio', 'xMidYMid meet')
-        .append('g')
-        .attr('transform', 'translate(0,0)');
+        .append('g');
         
     
-    
+        const radius = (dimensions.width + dimensions.height)*0.01;
+        const nodeDiameter = radius * 2;
     
         // Definer grafen/hieraki
         const hierarchyRoot = d3.hierarchy(TreeData_H);
     
         // definer tree layout
         const treeLayout = d3.tree()
-          .size([width, height]);
-        treeLayout(hierarchyRoot);
+          .size([width, height])
+          .nodeSize([nodeDiameter, nodeDiameter])  // Specifies the fixed size of each node
+          .separation((a, b) => a.parent == b.parent ? 1 : 1);
+       
+          treeLayout(hierarchyRoot);
     
-     
-    
+        // Calculate the vertical offset based on the 'Tone' node
+          const toneNode = hierarchyRoot.descendants().find(d => d.data.name === "Tone");
+          const yOffset = height / 2 - toneNode.y;  // Center vertically around 'Tone'
+          const xOffset = width / 2 - toneNode.x;  // Center horizontally
+
+        // Apply transformation to center the tree
+        const group = svg.append('g')
+        .attr('transform', `translate(${xOffset},${yOffset})`);  
+
         hierarchyRoot.descendants().forEach(node => {
           node.y = height - node.y - margin.bottom; // This will flip the tree
     
@@ -79,8 +89,8 @@ function TreeVisualization() {
           .attr('d', d => linksGenerator({ source: d.source, target: { x: d.source.x, y: d.source.y }})) // Start link at source node
           .attr("d", linksGenerator); // Update the d attribute here
           
-    
-    
+ 
+  
 
         // lager et kartover hvor nodene er lagd over er
         const nodesMap = new Map();
@@ -88,6 +98,49 @@ function TreeVisualization() {
           nodesMap.set(d.data.name, d);
         });
   
+
+        // Function to split text into multiple lines
+        function splitText(text, maxLines, maxChars) {
+          const words = text.split(/\s+/);
+          if (words.length === 1) return [text]; // No need to split if only one word
+
+          const lines = [];
+          let currentLine = words[0];
+
+          for (let i = 1; i < words.length; i++) {
+            if (currentLine.length + words[i].length + 1 <= maxChars && lines.length < maxLines - 1) { // Check max line width and limit lines
+              currentLine += " " + words[i];
+            } else {
+              lines.push(currentLine);
+              currentLine = words[i];
+            }
+          }
+          lines.push(currentLine); // Push the last line
+          return lines.slice(0, maxLines); // Ensure only up to maxLines are returned
+        }
+
+        // Function to dynamically adjust font size to fit inside the node
+        function adjustFontSize(node, radius) {
+          let fontSize = parseFloat(node.style("font-size"));
+          let bbox = node.node().getBBox();
+
+          while ((bbox.width > radius * 2 || bbox.height > radius * 2) && fontSize > 12) { // Reduce font size if too large
+            fontSize -= 1;
+            node.style("font-size", `${fontSize}px`);
+            bbox = node.node().getBBox();
+          }
+          while ((bbox.width < radius * 2 - 10 && bbox.height < radius * 2 - 10) && fontSize < 20) { // Increase font size if too small
+            fontSize += 1;
+            node.style("font-size", `${fontSize}px`);
+            bbox = node.node().getBBox();
+          }
+        }
+
+
+
+
+
+
 
         // tegner noder
         const nodeGroups = svg.selectAll(".node")
@@ -99,27 +152,51 @@ function TreeVisualization() {
             handleNodeClick(event, d, d.data.name, d.x, d.y);
         });
     
+
+        // Under tegning av noder
+        nodeGroups.each(function(d) {
+          const node = d3.select(this);
+          node.attr('id', d.data.name); // Sett en ID for enklere seleksjon
+
+          if (d.depth > 1) {
+            node.classed('hidden', true);
+            // Skjul linker til denne noden siden den er skjult
+            d3.selectAll('.link').filter(link => {
+              return (link.source === d || link.target === d);
+            }).classed('hidden', true);
+          }
+        });
+
+
+
         // tegner sirkler rundt nodene?  
         nodeGroups.append("circle")
-        .attr("r", (dimensions.width + dimensions.height) / 90) // Set the radius as needed
+        .attr("r", radius)// Set the radius as needed
         .attr("class", "node-circle")
+                
+        // Tegner tekst i nodene med dynamisk sizing and multi-line handling
+        nodeGroups.each(function(d) {
+          const node = d3.select(this);
+          const lines = splitText(d.data.name, 3, 10); // Allow up to 3 lines, max 10 characters per line
+          const text = node.append("text")
+            .attr("dy", "-0.5em")
+            .style("text-anchor", "middle");
+
+          text.selectAll("tspan")
+            .data(lines)
+            .enter().append("tspan")
+            .attr("x", 0)
+            .attr("dy", (d, i) => `${i * 0.9}em`) // Adjust line height
+            .text(d => d);
+
+          adjustFontSize(text, radius); // Start with a reasonable default font size
+        });
+            
+    
+    
         
-        
     
-          
-        // tegner tekst i nodene
-        nodeGroups.append("text")
-          .attr("dy", "0.35em")
-          .attr("x", d => d.children ? 0 : 0) // Position text left of parent nodes, right of leaf nodes
-          .style("text-anchor", "middle")
-          .style("font-size", (dimensions.width + dimensions.height) / 200) // Set the font size as needed
-          .text(d => d.data.name)
-          .attr("class", "node-text")
-    
-    
-    
-        
-    
+
         // Konverterer source og target til D3 nodene ifølge kartet
         const crossLinks = TreeData_C.map(link => ({
           source: nodesMap.get(link.source),
@@ -164,9 +241,6 @@ function TreeVisualization() {
           if (node.y > maxY) maxY = node.y;
         });
         
-        // Code from line 75-90
-        const xOffset = (maxX - minX) / 2;
-        const yOffset = (maxY - minY) / 2;
     
         setTimeout(() => {
           setIsTreeVisible(true);
@@ -207,27 +281,55 @@ const handleNodeClick = (event, d) => {
   const currentCircle = d3.select(event.currentTarget).select('circle');
   const isCurrentlyHighlighted = currentCircle.classed('highlighted');
   const isCurrentlyFocused = currentCircle.classed('inFocus');
+  
 
+   // Fjern fokus og highlight fra alle noder, og skjul deres barn
+   d3.selectAll('.node-circle').classed('highlighted', false);
+   d3.selectAll('.node-circle').classed('inFocus', false);
+   d3.selectAll('.node').each(function(d) {
+     d3.select(this).selectAll('.node').classed('hidden', true);
+   });
 
 
   if (isCurrentlyFocused) {
     // Node is currently focused and clicked again, remove focus
     toggleFocus(false, currentNode, d);
+    d3.selectAll('.node-circle').classed('highlighted', false);
+    d3.selectAll('.node').each(function(d) {
+      d3.select(this).selectAll('.node').classed('hidden', true);
+    });
+    
     currentCircle.classed('highlighted', true);
     currentCircle.classed('inFocus', false);
+    
+  
+      d.children.forEach(child => {
+        const childNode = d3.select(`[id='${child.data.name}']`);
+        childNode.classed('hidden', false);
+        // Finn og vis linken mellom parent og child
+        d3.selectAll('.link').filter(link => {
+          return (link.source === d && link.target === child.data) || (link.source === child.data && link.target === d);
+        }).classed('hidden', false);
+      });
+    
+
   } else if (isCurrentlyHighlighted) {
     // Node is highlighted and clicked, set focus
     toggleFocus(true, currentNode, d);
     currentCircle
     .classed('highlighted', false)
     .classed('inFocus', true);
+    
+
   } else {
     // Node is not highlighted, set it as highlighted
     d3.selectAll('.node-circle')
       .classed('highlighted', false)
       .classed('inFocus', false);
-
     currentCircle.classed('highlighted', true);
+    d.children && d.children.forEach(child => {
+      d3.select(`[id='${child.data.name}']`).classed('hidden', false);
+    });
   }
 };
     

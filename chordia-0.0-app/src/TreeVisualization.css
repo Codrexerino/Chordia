@@ -31,7 +31,6 @@
 }
   
 .node-text {
-    font: 8px sans-serif;
     fill: #096415; /* Dark green text */
 }
 
@@ -100,6 +99,8 @@
 .hidden {
   opacity: 0; /* Hides the node */
   transition: opacity 0.3s ease; /* Smooth transition for fading in and out */
+  display: none;
+  position: absolute;
 }
 /* Makes nodes invisible */
 
