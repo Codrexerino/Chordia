@@ -5,7 +5,6 @@ import { TreeData_H, TreeData_C } from './TreeData.js';
 
 function TreeVisualization() {
   const svgRef = useRef(null);
-  const [selectedNode, setSelectedNode] = useState(null); // velger node variabel
   const [selectedNodeKey, setSelectedNodeKey] = useState(null);
   const [dimensions, setDimensions] = useState({
     width: window.innerWidth,
@@ -15,7 +14,7 @@ function TreeVisualization() {
   const [isInFocus, setIsInFocus] = useState(false);
   const [imageSource, setImageSource] = useState('');
   const [nodePositions, setNodePositions] = useState({});
-  
+
 
 
   
@@ -25,14 +24,14 @@ function TreeVisualization() {
         d3.select(svgRef.current).selectAll('*').remove();
 
         // Define the margins inside the useEffect hook
-        const margin = { top: 20, right: 20, bottom: 20, left: 120 };
+        const margin = { top: 20, right: 20, bottom: 20, left: 20 };
         const width = dimensions.width - margin.left - margin.right;
         const height = dimensions.height - margin.top - margin.bottom;
     
         // Now append the svg element to the ref and set up the viewBox
         const svg = d3.select(svgRef.current)
         .attr('viewBox', `0, 0, ${dimensions.width},${dimensions.height}`)
-        .attr('preserveAspectRatio', 'xMidYMid meet')
+        //.attr('preserveAspectRatio', 'xMidYMid meet')
         .append('g');
         
     
@@ -45,8 +44,8 @@ function TreeVisualization() {
         // definer tree layout
         const treeLayout = d3.tree()
           .size([width, height])
-          .nodeSize([nodeDiameter, nodeDiameter])  // Specifies the fixed size of each node
-          .separation((a, b) => a.parent == b.parent ? 1 : 1);
+          .nodeSize([nodeDiameter, nodeDiameter*2.3])  // Specifies the fixed size of each node
+          .separation((a, b) => a.parent == b.parent ? 2 : 3.5);
        
           treeLayout(hierarchyRoot);
     
@@ -95,10 +94,44 @@ function TreeVisualization() {
         // lager et kartover hvor nodene er lagd over er
         const nodesMap = new Map();
         hierarchyRoot.descendants().forEach(d => {
-          nodesMap.set(d.data.name, d);
+          nodesMap.set(d.data.name, { x: d.x, y: d.y });
         });
-  
+       
 
+        const nodeGroups = svg.selectAll(".node")
+        .data(hierarchyRoot.descendants())
+        .enter().append("g")
+        .attr("class", "node")
+        .attr("transform", d => `translate(${d.x},${d.y})`)
+        .on("click", (event, d) => {
+            handleNodeClick(d3.select(event.currentTarget), d, nodesMap);
+        });
+
+    
+
+        // Under tegning av noder
+        nodeGroups.each(function(d) {
+          const node = d3.select(this);
+          node.attr('id', d.data.name); // Sett en ID for enklere seleksjon
+
+          if (d.depth > 12) {
+            node.classed('hidden', true);
+            // Skjul linker til denne noden siden den er skjult
+            d3.selectAll('.link').filter(link => {
+              return (link.source === d || link.target === d);
+            }).classed('hidden', true);
+          }
+        });
+
+
+
+        // tegner sirkler rundt nodene?  
+        nodeGroups.append("circle")
+        .attr("r", radius)// Set the radius as needed
+        .attr("class", "node-circle")
+                
+
+        
         // Function to split text into multiple lines
         function splitText(text, maxLines, maxChars) {
           const words = text.split(/\s+/);
@@ -142,38 +175,6 @@ function TreeVisualization() {
 
 
 
-        // tegner noder
-        const nodeGroups = svg.selectAll(".node")
-          .data(hierarchyRoot.descendants())
-          .enter().append("g")
-          .attr("class", "node")
-          .attr("transform", d => `translate(${d.x},${d.y})`)
-          .on("click", (event, d) => {
-            handleNodeClick(event, d, d.data.name, d.x, d.y);
-        });
-    
-
-        // Under tegning av noder
-        nodeGroups.each(function(d) {
-          const node = d3.select(this);
-          node.attr('id', d.data.name); // Sett en ID for enklere seleksjon
-
-          if (d.depth > 1) {
-            node.classed('hidden', true);
-            // Skjul linker til denne noden siden den er skjult
-            d3.selectAll('.link').filter(link => {
-              return (link.source === d || link.target === d);
-            }).classed('hidden', true);
-          }
-        });
-
-
-
-        // tegner sirkler rundt nodene?  
-        nodeGroups.append("circle")
-        .attr("r", radius)// Set the radius as needed
-        .attr("class", "node-circle")
-                
         // Tegner tekst i nodene med dynamisk sizing and multi-line handling
         nodeGroups.each(function(d) {
           const node = d3.select(this);
@@ -266,6 +267,21 @@ function TreeVisualization() {
       drawTree();
   },[dimensions]);
 
+
+  useEffect(() => {
+    const svg = d3.select(svgRef.current);
+    const zoom = d3.zoom()
+        .scaleExtent([0.1, 2.3])
+        .on('zoom', (event) => {
+            svg.select('g').attr('transform', event.transform);
+        });
+
+    svg.call(zoom);  // Aktiver zoom og pan før treet tegnes
+
+    drawTree();  // Deretter tegn treet
+}, [dimensions]);  // Avhenger av endringer i dimensjoner
+
+
   const handleResize = () => {
     // Hent nåværende dimensjoner fra viewport eller container
     const { width, height } = svgRef.current.getBoundingClientRect();
@@ -273,183 +289,123 @@ function TreeVisualization() {
 };
 
 
-// Highlight og inFocus logikk
-const handleNodeClick = (event, d) => {
-  //console.log("nodesMap inside handleNodeClick:", nodesMap.get(node.data.name));
-
-  const currentNode = d3.select(event.currentTarget);  
-  const currentCircle = d3.select(event.currentTarget).select('circle');
-  const isCurrentlyHighlighted = currentCircle.classed('highlighted');
-  const isCurrentlyFocused = currentCircle.classed('inFocus');
-  
-
-   // Fjern fokus og highlight fra alle noder, og skjul deres barn
-   d3.selectAll('.node-circle').classed('highlighted', false);
-   d3.selectAll('.node-circle').classed('inFocus', false);
-   d3.selectAll('.node').each(function(d) {
-     d3.select(this).selectAll('.node').classed('hidden', true);
-   });
 
 
-  if (isCurrentlyFocused) {
-    // Node is currently focused and clicked again, remove focus
-    toggleFocus(false, currentNode, d);
-    d3.selectAll('.node-circle').classed('highlighted', false);
-    d3.selectAll('.node').each(function(d) {
-      d3.select(this).selectAll('.node').classed('hidden', true);
-    });
-    
-    currentCircle.classed('highlighted', true);
-    currentCircle.classed('inFocus', false);
-    
-  
-      d.children.forEach(child => {
-        const childNode = d3.select(`[id='${child.data.name}']`);
-        childNode.classed('hidden', false);
-        // Finn og vis linken mellom parent og child
-        d3.selectAll('.link').filter(link => {
-          return (link.source === d && link.target === child.data) || (link.source === child.data && link.target === d);
-        }).classed('hidden', false);
-      });
-    
 
-  } else if (isCurrentlyHighlighted) {
-    // Node is highlighted and clicked, set focus
-    toggleFocus(true, currentNode, d);
-    currentCircle
-    .classed('highlighted', false)
-    .classed('inFocus', true);
-    
 
-  } else {
-    // Node is not highlighted, set it as highlighted
-    d3.selectAll('.node-circle')
-      .classed('highlighted', false)
-      .classed('inFocus', false);
-    currentCircle.classed('highlighted', true);
-    d.children && d.children.forEach(child => {
+function updateNodeVisibility(node, shouldShowChildren) {
+  if (shouldShowChildren) {
+    // Sjekker om barn eksisterer før forsøk på å vise dem
+    node.data().children?.forEach(child => {
       d3.select(`[id='${child.data.name}']`).classed('hidden', false);
     });
-  }
-};
-    
-
-function toggleFocus(shouldFocus, currentNode, node, d) {
-  setIsInFocus(shouldFocus);
-  if (shouldFocus) {
-    // Set focus on the node
-    displayFocus(currentNode, node, d);
   } else {
-    // Remove focus from the node
-    hideFocus(currentNode, node, d);
+    // Skjul alle noder, men vis toppnivå nodene
+    d3.selectAll('.node').classed('hidden', true);
+    d3.selectAll('[id]').classed('hidden', false); // Anta at dette er toppnivå nodene
   }
 }
 
 
+// Håndter klikk på node
+function handleNodeClick(node, d, nodesMap) {
+ 
+  const nodeName = d.data.name;
+    // Sjekk om noden allerede er lagret
+    if (!nodePositions[nodeName]) {
+        // Lagre den originale posisjonen hvis den ikke allerede er lagret
+        setNodePositions(prev => ({
+            ...prev,
+            [nodeName]: { x: node.x, y: node.y }
+        }));
+    }
 
-function displayFocus(currentNode, node, d) {
-  setSelectedNode(node);
-  setSelectedNodeKey(node.data.name);
+  const isHighlighted = node.classed('highlighted');
+  const isFocused = node.classed('inFocus');
 
-
-
-  const infoContainer = d3.select('#node-info-container');
-  infoContainer.html('')
-    .append('div')
-    .attr('class', 'node-info visible')
-    .html(`<strong>Name:</strong> ${node.data.name}<br><strong>Description:</strong> ${node.data.description}`);
-
-  d3.selectAll('.node, .link, .cross-link').classed('hidden', true);
-
-
-  currentNode.classed('hidden', false)
-    .classed('inFocus', true)
-    .transition()
-    .duration(500)
-    .attr("transform", "translate(100, 100)"); // Adjust node position for focus
-}
-
-
-function hideFocus(currentNode, d) {
-  const originalPosition = nodePositions[d.data.name];
-  
-  currentNode.transition()
-    .duration(500)
-    .attr("transform", `translate(${originalPosition.x},${originalPosition.y})`);
-    
-  d3.selectAll('.node-circle').classed('inFocus', false);    
-  d3.selectAll('.node, .link, .cross-link').classed('hidden', false)
-  
-
-  // Clear any node-specific information display
-  const infoContainer = d3.select('#node-info-container');
-  infoContainer.html('');
-
-  // Update the state to reflect that no node is in focus
-  //setSelectedNode(null);
-  //setSelectedNodeKey(null);
-
-  currentNode.select('.node-circle').classed('highlighted', true);
-  // Set the node as 'highlighted' to indicate it's the previously focused node
-
-}
-
-
-
-  
-
-
-
-
-
-/*
-
-// Funksjon for å vise node-info
-function displayNodeInfo(d) {
-  const infoContainer = d3.select('#node-info-container');
-  if (d) {  // Sjekker om det er data å vise
-    infoContainer.html('')  // Tømmer containeren først
-      .append('div')
-      .attr('class', 'node-info visible')
-      .html(`<p>Name: ${d.data.name}</p><p>Description: ${d.data.description}</p>`);
-  } else {
-//    hideNodeInfo(); // Ingen data å vise, skjul info-boksen
-  }
-}
-
-
-// Funksjon for å skjule node-info
-function hideNodeInfo() {
-  d3.select('#node-info-container').html('');  // Tømmer innholdet helt
-}
-
-
-const handleBackClick = () => {
-  // Remove all focus and highlighting
-  d3.selectAll('.node-circle')
-    .classed('highlighted', false)
-    .classed('inFocus', false);
-
-  // Make all nodes visible again
-  d3.selectAll('.node, .link, .cross-link')
-    .classed('hidden', false)
-    .transition()
-    .duration(500)
-    .attr("transform", d => `translate(${d.x},${d.y})`);
-
-  if (selectedNodeKey) {
-    const nodeToHighlight = d3.selectAll('.node').filter(d => d.data.name === selectedNodeKey);
-    nodeToHighlight.select('.node-circle').classed('highlighted', true);
-    displayNodeInfo(selectedNode);
-  } else {
-    hideNodeInfo();
+  if (!isHighlighted && !isFocused) {
+    // Clicked on a visible node, highlight it
+    highlightNode(node, d, nodesMap);
+  } else if (isHighlighted && !isFocused) {
+    // Clicked on a highlighted node, focus it and remove highlight
+    focusNode(node, d, nodesMap);
+  } else if (isFocused) {
+    // Clicked on a node in focus, highlight it and remove focus
+    highlightNode(node, d, nodesMap);
   }
 
+  // Update other nodes to ensure only one node is highlighted or in focus
+  d3.selectAll('.node').each(function() {
+    const currentNode = d3.select(this);
+    if (currentNode.node() !== node.node()) {
+      currentNode.classed('highlighted', false).classed('inFocus', false);
+    }
+  });
+ }
 
-  setSelectedNode(null);
-  setSelectedNodeKey(null);
-};
-*/
+
+
+//Highligher node
+function highlightNode(node, d, nodesMap) {
+console.log("nodesMap in highlightNode",nodesMap);
+  // Move the node to its original position from nodesMap
+  const nodeName = d.data.name;
+  const originalPosition = nodePositions[nodeName];
+
+  if (originalPosition) {
+      node.attr('transform', `translate(${originalPosition.x}, ${originalPosition.y})`);
+  }
+  
+  // Update the node's class
+  node.classed('highlighted', true).classed('inFocus', false);
+
+  // Make the node's children visible
+  node.selectAll('circle').each(function() {
+    d3.select(this).classed('hidden', false);
+  });
+}
+
+
+//Fokuserer node
+function focusNode(node, d, nodesMap) {
+  console.log("focusNode", node, d, nodesMap);  
+  // Move the node to (100, 100)
+  node.attr('transform', `translate(100, 100)`);
+
+  // Update the node's class
+  node.classed('highlighted', false).classed('inFocus', true);
+
+  // Make the node's children invisible
+  node.selectAll('circle').each(function() {
+    d3.select(this).classed('hidden', true);
+  });
+  /*
+  const infoContainer = d3.select('#node-info-container').html('')
+    .append('div').attr('class', 'node-info visible')
+    .html(`<strong>Name:</strong> ${nodeData.name}<br><strong>Description:</strong> ${nodeData.description}`);
+    */
+}
+
+
+
+
+// Legg til event handlers
+d3.selectAll('.node-circle').on('click', function(event, d) {
+  const d3Node = d3.select(this);  // Klart definert D3 seleksjon
+  handleNodeClick(d3Node);
+});
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Function to handle dropdown change
 const handleDropdownChange = (event) => {
