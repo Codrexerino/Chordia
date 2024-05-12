@@ -10,11 +10,9 @@ function TreeVisualization() {
     width: window.innerWidth,
     height: window.innerHeight
   });
-  const [isTreeVisible, setIsTreeVisible] = useState(false);
   const [isInFocus, setIsInFocus] = useState(false);
   const [imageSource, setImageSource] = useState('');
   const [nodePositions, setNodePositions] = useState({});
-
 
 
   
@@ -23,93 +21,114 @@ function TreeVisualization() {
         //fjerner alle tidligere elementer  
         d3.select(svgRef.current).selectAll('*').remove();
 
-        // Define the margins inside the useEffect hook
-        const margin = { top: 20, right: 20, bottom: 20, left: 20 };
-        const width = dimensions.width - margin.left - margin.right;
-        const height = dimensions.height - margin.top - margin.bottom;
-    
+     
         // Now append the svg element to the ref and set up the viewBox
         const svg = d3.select(svgRef.current)
         .attr('viewBox', `0, 0, ${dimensions.width},${dimensions.height}`)
-        //.attr('preserveAspectRatio', 'xMidYMid meet')
         .append('g');
-        
-    
+
+        //radius og diameter på noder basert på viewport?
         const radius = (dimensions.width + dimensions.height)*0.01;
         const nodeDiameter = radius * 2;
     
         // Definer grafen/hieraki
-        const hierarchyRoot = d3.hierarchy(TreeData_H);
-    
-        // definer tree layout
-        const treeLayout = d3.tree()
-          .size([width, height])
-          .nodeSize([nodeDiameter, nodeDiameter*2.3])  // Specifies the fixed size of each node
-          .separation((a, b) => a.parent == b.parent ? 2 : 3.5);
+        const root = d3.hierarchy(TreeData_H);
+        const treeLayout = d3.cluster()
+          .size([360, radius - 50])
+          .nodeSize([nodeDiameter, nodeDiameter]);  // Specifies the fixed size of each node
+          //.separation((a, b) => a.parent == b.parent ? 2 : 2);
        
-          treeLayout(hierarchyRoot);
-    
-        // Calculate the vertical offset based on the 'Tone' node
-          const toneNode = hierarchyRoot.descendants().find(d => d.data.name === "Tone");
-          const yOffset = height / 2 - toneNode.y;  // Center vertically around 'Tone'
-          const xOffset = width / 2 - toneNode.x;  // Center horizontally
+        treeLayout(root);
 
-        // Apply transformation to center the tree
-        const group = svg.append('g')
-        .attr('transform', `translate(${xOffset},${yOffset})`);  
-
-        hierarchyRoot.descendants().forEach(node => {
-          node.y = height - node.y - margin.bottom; // This will flip the tree
-    
-          // Update the x and y attributes of the nodes and links
-          node.x += margin.left;
-          node.y += margin.top;
-
-          setNodePositions(prevPositions => ({
-            ...prevPositions,
-            [node.data.name]: { x: node.x, y: node.y }
-        }));
-
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        root.each(node => {
+          minX = Math.min(minX, node.x);
+          maxX = Math.max(maxX, node.x);
+          minY = Math.min(minY, node.y);
+          maxY = Math.max(maxY, node.y);
         });
+        
+        
+
+
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+
+        const translateX = (dimensions.width/2) - centerX;
+        const translateY = (dimensions.height/2)  - centerY;
+        
+        svg.attr('transform', `translate(${translateX}, ${translateY})`);
+
+
+
+
+
+        const project = (x, y) => {
+          const angle = (x - 90) / 180 * Math.PI;
+          const radius = y;
+          return [
+              radius * Math.cos(angle),
+              radius * Math.sin(angle)
+          ];
+      };
+      
+    
+      
+    
+/*
+        // Manuell justering av x og y verdier for Pitch, Timbre, og Rhythm
+        const keyNodes = ["Pitch", "Timbre", "Rhythm"];
+        const angles = [90, 210, 330];  // Deler sirkelen i tre like deler
+        root.descendants().forEach((d, i) => {
+            if (keyNodes.includes(d.data.name)) {
+                d.x = angles[keyNodes.indexOf(d.data.name)];
+                d.y = radius / 2; // Plasserer disse nodene i samme radius
+            }
+        });
+*/
+
+
     
         // Definerer linker basert på hierakial verdier
     
-        const linksGenerator = d3.linkVertical()
-          .x(d => d.x)
-          .y(d => d.y);
+        const linksGenerator = d3.linkRadial()
+        .angle(d => d.x * Math.PI / 180)
+        .radius(d => d.y);
         
     
          
         // tegner linker
         svg.selectAll(".link")
-          .data(hierarchyRoot.links())
+          .data(root.links())
           .enter().append("path")
-          .attr("class", "link")
-          .attr('d', d => linksGenerator({ source: d.source, target: { x: d.source.x, y: d.source.y }})) // Start link at source node
-          .attr("d", linksGenerator); // Update the d attribute here
+        .attr("class", "link")
+        .attr('d', linksGenerator);
+  
           
  
   
 
         // lager et kartover hvor nodene er lagd over er
         const nodesMap = new Map();
-        hierarchyRoot.descendants().forEach(d => {
+        root.descendants().forEach(d => {
           nodesMap.set(d.data.name, { x: d.x, y: d.y });
         });
        
 
+
+    
         const nodeGroups = svg.selectAll(".node")
-        .data(hierarchyRoot.descendants())
+        .data(root.descendants())
         .enter().append("g")
         .attr("class", "node")
-        .attr("transform", d => `translate(${d.x},${d.y})`)
+        .attr("transform", d => `translate(${project(d.x, d.y)})`)
         .on("click", (event, d) => {
             handleNodeClick(d3.select(event.currentTarget), d, nodesMap);
         });
 
     
 
-        // Under tegning av noder
+        // id for noder???
         nodeGroups.each(function(d) {
           const node = d3.select(this);
           node.attr('id', d.data.name); // Sett en ID for enklere seleksjon
@@ -123,11 +142,12 @@ function TreeVisualization() {
           }
         });
 
-
+        // Reduserer radius basert på dybde
+        const nodeRadius = d => 5 + (30 - d.depth * 2);  
 
         // tegner sirkler rundt nodene?  
         nodeGroups.append("circle")
-        .attr("r", radius)// Set the radius as needed
+        .attr("r", nodeRadius)// Set the radius as needed
         .attr("class", "node-circle")
                 
 
@@ -193,59 +213,7 @@ function TreeVisualization() {
           adjustFontSize(text, radius); // Start with a reasonable default font size
         });
             
-    
-    
-        
-    
 
-        // Konverterer source og target til D3 nodene ifølge kartet
-        const crossLinks = TreeData_C.map(link => ({
-          source: nodesMap.get(link.source),
-          target: nodesMap.get(link.target),
-        }));
-        
-    
-        // tegner linkene fra TreeData_C
-        svg.selectAll(".cross-link")
-        .data(crossLinks)
-        .enter().append("path")
-        .attr("class", "cross-link")
-        .attr("d", d3.linkVertical()
-          .x(d => d.x)
-          .y(d => d.y))
-          .on("mouseover", function(event, d) {
-    
-        // Vis informasjonsboks med informasjon fra linken
-        d3.select("#link-info")
-              .style("left", (event.pageX + 10) + "px")
-              .style("top", (event.pageY + 10) + "px")
-              .select("#link-text")
-              .text(d.description); // Anta at hver link har en 'description' eiendom
-        
-            d3.select("#link-info").classed("hidden", false);
-          })
-          .on("mouseout", function() {
-            // Skjul informasjonsboksen
-            d3.select("#link-info").classed("hidden", true);  
-          });    
-    
-    
-      
-    
-        // After the tree layout is computed
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    
-        hierarchyRoot.each(node => {
-          if (node.x < minX) minX = node.x;
-          if (node.x > maxX) maxX = node.x;
-          if (node.y < minY) minY = node.y;
-          if (node.y > maxY) maxY = node.y;
-        });
-        
-    
-        setTimeout(() => {
-          setIsTreeVisible(true);
-        }, 50);
   };
 
   // useEffect for å sette initielle dimensjoner og tegne treet ved oppstart
@@ -277,9 +245,15 @@ function TreeVisualization() {
         });
 
     svg.call(zoom);  // Aktiver zoom og pan før treet tegnes
-
+    
     drawTree();  // Deretter tegn treet
 }, [dimensions]);  // Avhenger av endringer i dimensjoner
+
+
+
+
+
+
 
 
   const handleResize = () => {
@@ -305,6 +279,8 @@ function updateNodeVisibility(node, shouldShowChildren) {
     d3.selectAll('[id]').classed('hidden', false); // Anta at dette er toppnivå nodene
   }
 }
+
+
 
 
 // Håndter klikk på node
@@ -431,8 +407,8 @@ const handleDropdownChange = (event) => {
 
   return (
   <div>
+    <svg ref={svgRef} className={"tree-container"}></svg>
     <img src={imageSource} alt="chosen picture" className={`dropdown-picture ${isInFocus ? 'visible' : 'hidden'}`} />
-    <svg ref={svgRef} className={`tree-container ${isTreeVisible ? 'visible' : ''}`} width={dimensions.width} height={dimensions.height}></svg>
     <div id="node-info-container"></div>
     <select className={`dropdown-menu ${isInFocus ? 'visible' : 'hidden'}`} onChange={handleDropdownChange}>
       <option value="option1">Noter</option>

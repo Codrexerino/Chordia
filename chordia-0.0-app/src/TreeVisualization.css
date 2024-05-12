@@ -1,21 +1,12 @@
 .tree-container {
-  height: 100vh;
-  width: 100vw;
-  display: block;
-  overflow: auto;
-  opacity: 0;
-  transition: 1s ease-in;
-}
 
-.tree-container.visible {
-  opacity: 1;
 }
 
 
 .link {
     fill: none;
     stroke: #196d56; /* Forest green for links */
-    stroke-width: 7px;
+    stroke-width: 1;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
@@ -28,6 +19,7 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   z-index: -100;
+  opacity: 0;
 }
   
 .node-text {
